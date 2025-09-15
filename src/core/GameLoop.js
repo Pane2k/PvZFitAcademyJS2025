@@ -1,0 +1,46 @@
+import Debug from "./Debug.js"
+
+export default class GameLoop {
+    constructor(update, render){
+        this.update = update
+        this.render = render
+
+        this.isRunning = false
+        this.lastTime = 0
+        this.requestId = null
+    }
+
+    loop = (timestamp) => {
+        if(!this.isRunning) return
+
+        // Расчет deltaTime
+        const deltaTime = (timestamp - this.lastTime) / 1000
+        this.lastTime = timestamp
+
+        // Вызов обновления и отрисовка
+        this.update(deltaTime)
+        this.render()
+
+        this.requestId = requestAnimationFrame(this.loop)
+    }
+
+    start(){
+        if (this.isRunning) return
+
+        this.isRunning = true
+        this.lastTime = performance.now()
+        this.requestId = requestAnimationFrame(this.loop)
+        Debug.log('=== GameLoop started ===')
+    }
+
+    stop(){
+        if (!this.isRunning) return
+
+        this.isRunning = false
+        if(this.requestId){
+            cancelAnimationFrame(this.requestId)
+            this.requestId = null
+        }
+        Debug.log('=== GameLoop stopped ===')
+    }
+}
