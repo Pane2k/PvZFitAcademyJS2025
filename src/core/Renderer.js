@@ -1,19 +1,20 @@
 import Debug from "./Debug.js";
 
 export default class Renderer{
-    constructor(canvas){
+    constructor(canvas, virtualWidth, virtualHeight){
         this.canvas = canvas
         this.ctx = canvas.getContext('2d')
         
+        window.addEventListener('resize', this.resize)
         this.resize()
-        window.addEventListener('resize', () => this.resize())
         Debug.log('Renderer initialized.')
     }
 
     resize = () => {
-        this.canvas.width = this.canvas.clientWidth
-        this.canvas.height = this.canvas.clientHeight
-        Debug.log(`Canvas resized to ${this.canvas.width}x ${this.canvas.height}`)
+        Debug.log('Resize event triggered!'); // <-- Добавим лог для проверки
+        this.canvas.width = this.canvas.clientWidth;
+        this.canvas.height = this.canvas.clientHeight;
+        Debug.log(`Canvas resized to ${this.canvas.width}x${this.canvas.height}`);
     }
 
     clear(color = 'black'){
@@ -22,6 +23,11 @@ export default class Renderer{
     }
 
     drawImage(image, x, y, width, height){
+        if (!image || image.width === 0 || image.height === 0) {
+            // Debug.warn('Attempted to draw an invalid or unloaded image.');
+            return
+        }
+
         if(width && height){
             this.ctx.drawImage(image, x, y, width, height)
         } else{
@@ -29,8 +35,9 @@ export default class Renderer{
         }
     }
 
-    drawRect(x, y, width, height, color){
+    drawRect(x, y, width, height, color,lineWidth = 1){
         this.ctx.fillStyle = color
-        this.ctx.fillRect(x, y, width, height)
+        this.ctx.lineWidth = lineWidth 
+        this.ctx.strokeRect(x, y, width, height);
     }
 }

@@ -2,18 +2,36 @@ import Debug from '../core/Debug.js'
 
 export default class World {
     constructor(){
-        this.entites = new Map()
+        this.entities = new Map()
         this.systems = []
         this.nextEntityID = 0
     }
     createEntity(){
         const entityID = this.nextEntityID++
-        this.entites.set(entityID, new Map())
+        this.entities.set(entityID, new Map())
         return entityID
     }
-
+    removeEntity(entityID){
+    
+        // Дополнительно освободим ячейку в сетке, если сущность ее занимала
+        if (this.grid) { // Предполагается, что у World есть ссылка на Grid
+            const gridLoc = this.getComponent(entityID, 'GridLocationComponent');
+            if (gridLoc) {
+                this.grid.removeEntity(gridLoc.row, gridLoc.col);
+            }
+        }
+        
+        this.entities.delete(entityID); // Используйте правильное имя свойства 'entities'
+        Debug.log(`Entity ${entityID} removed.`);
+    }
+    removeComponent(entityID, componentName) {
+        const entityComponents = this.entities.get(entityID);
+        if (entityComponents) {
+            entityComponents.delete(componentName);
+        }
+    }
     addComponent(entityID, component){
-        const entityComponents = this.entites.get(entityID)
+        const entityComponents = this.entities.get(entityID)
         entityComponents.set(component.constructor.name, component)
     }
     addSystem(system){
@@ -23,7 +41,7 @@ export default class World {
     }
     getEntitiesWithComponents(...componentNames){
         const result = []
-        for (const [entityID, components] of this.entites.entries()) {
+        for (const [entityID, components] of this.entities.entries()) {
             if(componentNames.every(name => components.has(name))){
                 result.push(entityID)
             }
@@ -31,7 +49,7 @@ export default class World {
         return result
     }
     getComponent(entityID, componentName){
-        return this.entites.get(entityID)?.get(componentName)
+        return this.entities.get(entityID)?.get(componentName)
     }
     update(deltaTime){
         for(const system of this.systems){

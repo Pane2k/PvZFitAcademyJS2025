@@ -14,8 +14,15 @@ export default class GameLoop {
         if(!this.isRunning) return
 
         // Расчет deltaTime
-        const deltaTime = (timestamp - this.lastTime) / 1000
-        this.lastTime = timestamp
+        const currentTime = performance.now();
+
+        let deltaTime = (currentTime - this.lastTime) / 1000;
+        if (deltaTime > 1) {
+            deltaTime = 1 / 60; 
+        }
+         this.lastTime = currentTime;
+
+        
 
         // Вызов обновления и отрисовка
         this.update(deltaTime)
