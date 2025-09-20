@@ -22,5 +22,24 @@
             "GridLocationComponent": {},
             "LifetimeComponent": { "duration": 10 }
         }
+    },
+    "zombie_basic": {
+        "spawnCost": 1,
+        "components": {
+            "PositionComponent": { "scale": 0.8 },
+            "SpriteComponent": { "assetKey": "zombie_basic" },
+            "RenderableComponent": {},
+            "HealthComponent": { "maxHealth": 100 },
+            "VelocityComponent": { 
+                "baseSpeed": -20,
+                "speedVariance": 5
+            },
+            "HitboxComponent": {
+                "offsetX": 25,
+                "offsetY": 5,
+                "width": 30,
+                "height": 90
+            }
+        }
     }
 }

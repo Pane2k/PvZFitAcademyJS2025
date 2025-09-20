@@ -1,7 +1,11 @@
 export default class Debug{
     static isEnabled = true
+    static showHitboxes = false;
+    static showInteractables = false;
+    
     static enable(){
         this.isEnabled = true
+        
         console.log('DEBUG MODE ENABLED!!!')
     }
     static disable(){

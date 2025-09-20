@@ -23,8 +23,18 @@ export default class InputHandler{
     }
     setupKeyboardListeners() {
         window.addEventListener('keydown', (event) => {
-            // Публикуем событие с кодом нажатой клавиши
-            eventBus.publish('input:keydown', { key: event.key });
+            const key = event.key.toLowerCase();
+            eventBus.publish('input:keydown', { key });
+
+            // Переключение отладочных флагов
+            if (key === 'o') {
+                Debug.showHitboxes = !Debug.showHitboxes;
+                Debug.log(`Debug Show Hitboxes: ${Debug.showHitboxes}`);
+            }
+            if (key === 'p') {
+                Debug.showInteractables = !Debug.showInteractables;
+                Debug.log(`Debug Show Interactables: ${Debug.showInteractables}`);
+            }
         });
     }
     getCanvasCoordinates(clientX, clientY) {

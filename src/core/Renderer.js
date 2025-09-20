@@ -35,9 +35,9 @@ export default class Renderer{
         }
     }
 
-    drawRect(x, y, width, height, color,lineWidth = 1){
-        this.ctx.fillStyle = color
-        this.ctx.lineWidth = lineWidth 
+    drawRect(x, y, width, height, strokeColor, lineWidth = 1){
+        this.ctx.strokeStyle = strokeColor;
+        this.ctx.lineWidth = lineWidth;
         this.ctx.strokeRect(x, y, width, height);
     }
 }

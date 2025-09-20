@@ -24,29 +24,37 @@ export default class GridAlignmentSystem {
         }
 
         for (const entityId of entities) {
-            if (this.world.getComponent(entityId, 'VelocityComponent')) {
-                continue;
-            }
+            
             const gridLoc = this.world.getComponent(entityId, 'GridLocationComponent');
             const pos = this.world.getComponent(entityId, 'PositionComponent');
+            const vel = this.world.getComponent(entityId, 'VelocityComponent');
 
             // 1. Получаем АКТУАЛЬНЫЕ центральные координаты ячейки из сетки
             const newWidth = this.grid.cellWidth * pos.scale
             const newHeight = this.grid.cellHeight * pos.scale
-
-            // 2. Рассчитываем новую позицию левого верхнего угла спрайта
-            const newWorldPos = this.grid.getWorldPos(gridLoc.row, gridLoc.col);
-            const newX = newWorldPos.x - newWidth / 2;
-            const newY = newWorldPos.y - newHeight / 2;
+            pos.width = newWidth;
+            pos.height = newHeight;
+            const targetWorldPos = this.grid.getWorldPos(gridLoc.row, gridLoc.col);
             
-            // 3. Если пиксельные координаты устарели, обновляем их
-            if (pos.x !== newX || pos.y !== newY || pos.width !== newWidth || pos.height !== newHeight) {
-                // Debug.log(`Re-aligning entity ${entityId}`); // Можно раскомментировать для отладки
-                pos.x = newX;
-                pos.y = newY;
-                pos.width = newWidth;
-                pos.height = newHeight;
+
+            if (vel) {
+                // ОБЪЕКТ ДВИЖЕТСЯ (например, падающее солнце)
+                // Мы управляем только его горизонтальным положением, чтобы он оставался в своей колонке.
+                // Вертикальное движение контролируется MovementSystem.
+                pos.x = targetWorldPos.x - newWidth / 2;
+            } else {
+                // ОБЪЕКТ СТАТИЧЕН (например, растение или приземлившееся солнце)
+                // Мы полностью контролируем его позицию, привязывая к центру ячейки.
+                const newX = targetWorldPos.x - newWidth / 2;
+                const newY = targetWorldPos.y - newHeight / 2;
+
+                if (pos.x !== newX || pos.y !== newY) {
+                    pos.x = newX;
+                    pos.y = newY;
+                }
             }
+            // --- ^^^ КОНЕЦ ОБНОВЛЕННОЙ ЛОГИКИ ^^^ ---
+        
         }
     }
 

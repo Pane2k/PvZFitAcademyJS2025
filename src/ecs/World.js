@@ -13,15 +13,15 @@ export default class World {
     }
     removeEntity(entityID){
     
-        // Дополнительно освободим ячейку в сетке, если сущность ее занимала
-        if (this.grid) { // Предполагается, что у World есть ссылка на Grid
+        const isCollectible = this.getComponent(entityID, 'CollectibleComponent');
+
+        if (this.grid) { 
             const gridLoc = this.getComponent(entityID, 'GridLocationComponent');
-            if (gridLoc) {
+            if (gridLoc && !isCollectible) {
                 this.grid.removeEntity(gridLoc.row, gridLoc.col);
             }
         }
-        
-        this.entities.delete(entityID); // Используйте правильное имя свойства 'entities'
+        this.entities.delete(entityID);
         Debug.log(`Entity ${entityID} removed.`);
     }
     removeComponent(entityID, componentName) {

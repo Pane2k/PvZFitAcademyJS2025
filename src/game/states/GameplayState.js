@@ -1,21 +1,25 @@
+import Debug from "../../core/Debug.js";
+import DebugOverlay from "../../ui/DebugOverlay.js";
 import BaseState from "./BaseState.js";
-import RenderSystem from "../../ecs/systems/RenderSystem.js";
 import PositionComponent from "../../ecs/components/PositionComponent.js";
 import SpriteComponent from "../../ecs/components/SpriteComponent.js";
 import RenderableComponent from "../../ecs/components/RenderableComponent.js";
-import PlayerInputSystem from "../../ecs/systems/PlayerInputSystem.js";
+import LifetimeComponent from "../../ecs/components/LifetimeComponent.js";
+
 import GridAlignmentSystem from "../../ecs/systems/GridAlignmentSystem.js";
+import PlayerInputSystem from "../../ecs/systems/PlayerInputSystem.js";
+import RenderSystem from "../../ecs/systems/RenderSystem.js";
+import CleanupSystem from "../../ecs/systems/CleanupSystem.js";
+import SunSpawningSystem from "../../ecs/systems/SunSpawningSystem.js";
+import MovementSystem from "../../ecs/systems/MovementSystem.js";
+import LifetimeSystem from "../../ecs/systems/LifetimeSystem.js";
+import WaveSystem from "../../ecs/systems/WaveSystem.js";
+
 import Grid from "../Grid.js";
 import Factory from "../Factory.js";
-import Debug from "../../core/Debug.js";
-import MovementSystem from "../../ecs/systems/MovementSystem.js";
-import SunSpawningSystem from "../../ecs/systems/SunSpawningSystem.js";
-import CleanupSystem from "../../ecs/systems/CleanupSystem.js";
-import LifetimeComponent from "../../ecs/components/LifetimeComponent.js";
-import LifetimeSystem from "../../ecs/systems/LifetimeSystem.js";
-import DebugOverlay from "../../ui/DebugOverlay.js";
 import eventBus from "../../core/EventBus.js";
 import HUD from "../../ui/HUD.js"
+
 
 export default class GameplayState extends BaseState{
     constructor(game){
@@ -23,6 +27,7 @@ export default class GameplayState extends BaseState{
         this.game = game
         this.hud = new HUD()
         this.debugOverlay = new DebugOverlay()
+        this.waveSystem = null
         this.grid = null
         this.renderSystem = null
         this.playerInputSystem = null
@@ -73,16 +78,20 @@ export default class GameplayState extends BaseState{
         Debug.log('Entering GameplayState...')
         
         const entityPrototypes = this.game.assetLoader.getJSON('entities');
+        const levelData = this.game.assetLoader.getJSON('levels').level_1;
         this.game.factory = new Factory(this.game.world, this.game.assetLoader, entityPrototypes, null);
 
+        const availablePlants = ['peashooter']
+        this.hud.initializeCards(entityPrototypes, availablePlants, this.game.assetLoader);
+
         this.renderSystem = new RenderSystem(this.game.renderer)
-        this.playerInputSystem = new PlayerInputSystem(this.game, null)
+        this.playerInputSystem = new PlayerInputSystem(this.game, null, this.hud)
         this.playerInputSystem.factory = this.game.factory
 
         this.gridAlignmentSystem = new GridAlignmentSystem(null)
         this.movementSystem = new MovementSystem();
         this.sunSpawningSystem = new SunSpawningSystem(null, null);
-
+        this.waveSystem = new WaveSystem(levelData, entityPrototypes, this.game.factory)
 
         
         
@@ -93,8 +102,9 @@ export default class GameplayState extends BaseState{
         this.game.world.addSystem(this.gridAlignmentSystem)
         this.game.world.addSystem(this.sunSpawningSystem)
         this.game.world.addSystem(this.movementSystem)
-        this.game.world.addSystem(new CleanupSystem());
+        this.game.world.addSystem(new CleanupSystem())
         this.game.world.addSystem(new LifetimeSystem())
+        this.game.world.addSystem(this.waveSystem)
 
         this.setupGrid();
         this.game.world.grid = this.grid;
@@ -126,7 +136,8 @@ export default class GameplayState extends BaseState{
         this.debugOverlay.draw(this.game.renderer);
 
         if(this.hud){
-            this.hud.draw(this.game.renderer)
+            const selectedPlant = this.playerInputSystem ? this.playerInputSystem.selectedPlant : null;
+            this.hud.draw(this.game.renderer, selectedPlant);
         }
     }
 

@@ -7,16 +7,20 @@ import VelocityComponent from "../ecs/components/VelocityComponent.js";
 import CollectibleComponent from "../ecs/components/CollectibleComponent.js";
 import LifetimeComponent from "../ecs/components/LifetimeComponent.js";
 import RemovalComponent from "../ecs/components/RemovalComponent.js";
+import HealthComponent from "../ecs/components/HealthComponent.js";
+import HitboxComponent from "../ecs/components/HitboxComponent.js";
 
 const componentMap = {
-    PositionComponent,
-    SpriteComponent,
+    PositionComponent, 
+    SpriteComponent, 
     RenderableComponent,
     GridLocationComponent,
-    VelocityComponent,
-    CollectibleComponent,
-    LifetimeComponent,
-    RemovalComponent
+    VelocityComponent, 
+    CollectibleComponent, 
+    LifetimeComponent, 
+    RemovalComponent,
+    HealthComponent, 
+    HitboxComponent
 }
 
 export default class Factory{
@@ -26,6 +30,7 @@ export default class Factory{
         this.prototypes = entityPrototypes
         this.grid = grid
     }
+
     create(name, initialData){
         const proto = this.prototypes[name]
         if(!proto){
@@ -45,8 +50,9 @@ export default class Factory{
 
             if(compName === 'PositionComponent'){
                 const scale = protoData.scale || 1.0
-                const width = initialData.gridCoords ? this.grid.cellWidth * scale : 80 * scale
-                const height = initialData.gridCoords ? this.grid.cellHeight * scale : 80 * scale
+                const baseSize = this.grid ? this.grid.cellWidth : 80;
+                const width = initialData.gridCoords ? baseSize * scale : 80 * scale;
+                const height = initialData.gridCoords ? baseSize * scale : 100 * scale;
                 
                 const x = initialData.x || 0
                 const y = initialData.y || 0
@@ -70,9 +76,18 @@ export default class Factory{
             }
             
             else if (compName === 'VelocityComponent') {
-                component = new CompClass(protoData.vx, protoData.vy)
+                let vx = protoData.vx || 0;
+                let vy = protoData.vy || 0;
+                if (typeof protoData.baseSpeed !== 'undefined') {
+                    const variance = protoData.speedVariance || 0;
+                    vx = protoData.baseSpeed + (Math.random() * 2 - 1) * variance;
+                }
+                component = new CompClass(vx, vy);
+            } else if (compName === 'HealthComponent') {
+                component = new CompClass(protoData.maxHealth);
+            } else if (compName === 'HitboxComponent') {
+                component = new CompClass(protoData.offsetX, protoData.offsetY, protoData.width, protoData.height);
             }
-
             else {
                 component = new CompClass()
             }
@@ -80,6 +95,10 @@ export default class Factory{
             if(component){
                 this.world.addComponent(entityID, component)
             }
+        }
+        if (this.world.getComponent(entityID, 'PositionComponent') && !this.world.getComponent(entityID, 'HitboxComponent')) {
+            const pos = this.world.getComponent(entityID, 'PositionComponent');
+            this.world.addComponent(entityID, new HitboxComponent(0, 0, pos.width, pos.height));
         }
         Debug.log(`Entity '${name}' created with ID: ${entityID}`)
         return entityID

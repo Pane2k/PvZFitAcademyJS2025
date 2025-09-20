@@ -38,8 +38,10 @@ export default class Game{
         Debug.log('Loading assets...')
         await Promise.all([
             this.assetLoader.loadImage('peashooter', 'assets/images/peashooter.png'),
-            this.assetLoader.loadImage('sun', 'assets/images/sun.png'), 
-            this.assetLoader.loadJSON('entities', 'data/entities.json')
+            this.assetLoader.loadImage('sun', 'assets/images/sun.png'),
+            this.assetLoader.loadImage('zombie_basic', 'assets/images/zombie.png'), 
+            this.assetLoader.loadJSON('entities', 'data/entities.json'),
+            this.assetLoader.loadJSON('levels', 'data/levels.json')
         ])
         
         Debug.log('Assets loaded.')
