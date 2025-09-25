@@ -1,0 +1,15 @@
+{
+  "background_image_key": "bg_main",
+  "source_dimensions": {
+    "width": 2400,
+    "height": 1028
+  },
+"layout": {
+    "playable_area": {
+      "x": 250,
+      "y": 290,
+      "width": 1200,
+      "height": 700
+    }
+  }
+}

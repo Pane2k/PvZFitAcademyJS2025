@@ -39,6 +39,10 @@ export default class World {
         system.world = this
         Debug.log(`System ${system.constructor.name} added.`)
     }
+    removeSystem(systemToRemove) {
+        this.systems = this.systems.filter(system => system !== systemToRemove);
+        Debug.log(`System ${systemToRemove.constructor.name} removed.`);
+    }
     getEntitiesWithComponents(...componentNames){
         const result = []
         for (const [entityID, components] of this.entities.entries()) {

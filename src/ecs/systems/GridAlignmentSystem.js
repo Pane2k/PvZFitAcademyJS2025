@@ -25,35 +25,22 @@ export default class GridAlignmentSystem {
 
         for (const entityId of entities) {
             
-            const gridLoc = this.world.getComponent(entityId, 'GridLocationComponent');
-            const pos = this.world.getComponent(entityId, 'PositionComponent');
-            const vel = this.world.getComponent(entityId, 'VelocityComponent');
-
-            // 1. Получаем АКТУАЛЬНЫЕ центральные координаты ячейки из сетки
-            const newWidth = this.grid.cellWidth * pos.scale
-            const newHeight = this.grid.cellHeight * pos.scale
-            pos.width = newWidth;
-            pos.height = newHeight;
-            const targetWorldPos = this.grid.getWorldPos(gridLoc.row, gridLoc.col);
+            const isStatic = !this.world.getComponent(entityId, 'VelocityComponent');
             
+            if (isStatic) {
+                const gridLoc = this.world.getComponent(entityId, 'GridLocationComponent');
+                const pos = this.world.getComponent(entityId, 'PositionComponent');
 
-            if (vel) {
-                // ОБЪЕКТ ДВИЖЕТСЯ (например, падающее солнце)
-                // Мы управляем только его горизонтальным положением, чтобы он оставался в своей колонке.
-                // Вертикальное движение контролируется MovementSystem.
-                pos.x = targetWorldPos.x - newWidth / 2;
-            } else {
-                // ОБЪЕКТ СТАТИЧЕН (например, растение или приземлившееся солнце)
-                // Мы полностью контролируем его позицию, привязывая к центру ячейки.
-                const newX = targetWorldPos.x - newWidth / 2;
-                const newY = targetWorldPos.y - newHeight / 2;
+                const targetWorldPos = this.grid.getWorldPos(gridLoc.row, gridLoc.col);
+                
+                const newX = targetWorldPos.x - pos.width / 2;
+                const newY = targetWorldPos.y - pos.height / 2;
 
                 if (pos.x !== newX || pos.y !== newY) {
                     pos.x = newX;
                     pos.y = newY;
                 }
             }
-            // --- ^^^ КОНЕЦ ОБНОВЛЕННОЙ ЛОГИКИ ^^^ ---
         
         }
     }

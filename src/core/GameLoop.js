@@ -8,6 +8,7 @@ export default class GameLoop {
         this.isRunning = false
         this.lastTime = 0
         this.requestId = null
+        this.timeScale = 1.0;
     }
 
     loop = (timestamp) => {
@@ -20,15 +21,20 @@ export default class GameLoop {
         if (deltaTime > 1) {
             deltaTime = 1 / 60; 
         }
-         this.lastTime = currentTime;
-
+        this.lastTime = currentTime;
+        const scaledDeltaTime = deltaTime * this.timeScale
         
 
         // Вызов обновления и отрисовка
-        this.update(deltaTime)
+        this.update(scaledDeltaTime)
         this.render()
 
         this.requestId = requestAnimationFrame(this.loop)
+    }
+    
+    setTimeScale(scale) {
+        this.timeScale = scale;
+        Debug.log(`Game speed changed. Time scale: ${this.timeScale}`);
     }
 
     start(){

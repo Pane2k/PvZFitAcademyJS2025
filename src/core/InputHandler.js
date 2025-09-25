@@ -2,8 +2,9 @@ import eventBus from "./EventBus.js";
 import Debug from "./Debug.js";
 
 export default class InputHandler{
-    constructor(canvas){
+    constructor(canvas, renderer){
         this.canvas = canvas
+        this.renderer = renderer
         this.setupListeners()
         this.setupKeyboardListeners();
         Debug.log('InputHandler initialized.')
@@ -35,16 +36,26 @@ export default class InputHandler{
                 Debug.showInteractables = !Debug.showInteractables;
                 Debug.log(`Debug Show Interactables: ${Debug.showInteractables}`);
             }
+            if (key === 'u') {
+                Debug.showHealthBars = !Debug.showHealthBars;
+                Debug.log(`Debug Show Health Bars: ${Debug.showHealthBars}`);
+            }
+            if (key === 'n') {
+                eventBus.publish('time:toggle_speed');
+            }
         });
     }
     getCanvasCoordinates(clientX, clientY) {
         const rect = this.canvas.getBoundingClientRect();
-        const scaleX = this.canvas.width / rect.width;
-        const scaleY = this.canvas.height / rect.height;
+        
+        // Координаты клика относительно холста
+        const screenX = clientX - rect.left;
+        const screenY = clientY - rect.top;
 
-        return {
-            x: (clientX - rect.left) * scaleX,
-            y: (clientY - rect.top) * scaleY
-        };
+        // Обратное преобразование из экранных в виртуальные координаты
+        const virtualX = (screenX - this.renderer.offsetX) / this.renderer.scale;
+        const virtualY = (screenY - this.renderer.offsetY) / this.renderer.scale;
+
+        return { x: virtualX, y: virtualY };
     }
 }

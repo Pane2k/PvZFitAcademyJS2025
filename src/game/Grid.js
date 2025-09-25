@@ -1,47 +1,32 @@
 import Debug from "../core/Debug.js";
 
 export default class Grid{
-    constructor(areaX, areaY, areaWidth, areaHeight, rows, cols) {
+    constructor(virtualX, virtualY, virtualWidth, virtualHeight, rows, cols) {
         this.rows = rows;
         this.cols = cols;
 
-        // VVV НОВАЯ ЛОГИКА РАСЧЕТА VVV
+        this.offsetX = virtualX;
+        this.offsetY = virtualY;
+        this.width = virtualWidth;
+        this.height = virtualHeight;
 
-        // 1. Определяем максимально возможный размер ячейки, чтобы вписаться в область
-        const cellWidthByArea = areaWidth / cols;
-        const cellHeightByArea = areaHeight / rows;
+        this.cellWidth = this.width / this.cols;
+        this.cellHeight = this.height / this.rows;
         
-        // 2. Выбираем наименьший из них, чтобы ячейка точно была квадратной и помещалась
-        this.cellSize = Math.min(cellWidthByArea, cellHeightByArea);
-        
-        // 3. Рассчитываем итоговые реальные размеры сетки
-        this.width = this.cellSize * cols;
-        this.height = this.cellSize * rows;
-
-        // 4. Центрируем сетку внутри выделенной для нее области
-        this.offsetX = areaX + (areaWidth - this.width) / 2;
-        this.offsetY = areaY + (areaHeight - this.height) / 2;
-
-        // Переименовываем для ясности
-        this.cellWidth = this.cellSize;
-        this.cellHeight = this.cellSize;
-        
-        // Создаем 2D-массив для хранения состояния ячеек
         this.cells = Array(rows).fill(null).map(() => Array(cols).fill(null));
 
-        Debug.log(`Grid created: ${cols}x${rows}. Cell size: ${this.cellSize.toFixed(2)}x${this.cellSize.toFixed(2)}`);
-        Debug.log(`Grid position: (${this.offsetX.toFixed(2)}, ${this.offsetY.toFixed(2)}), size: ${this.width.toFixed(2)}x${this.height.toFixed(2)}`)
+        Debug.log(`Grid created in virtual space. Cell size: ${this.cellWidth.toFixed(2)}x${this.cellHeight.toFixed(2)}`);
     }
-    getCoords(x, y) {
-        if (x < this.offsetX || x > this.offsetX + this.width || 
-            y < this.offsetY || y > this.offsetY + this.height) {
-            return null
+    getCoords(virtualX, virtualY) {
+        if (virtualX < this.offsetX || virtualX > this.offsetX + this.width || 
+            virtualY < this.offsetY || virtualY > this.offsetY + this.height) {
+            return null;
         }
 
-        const col = Math.floor((x - this.offsetX) / this.cellWidth)
-        const row = Math.floor((y - this.offsetY) / this.cellHeight)
+        const col = Math.floor((virtualX - this.offsetX) / this.cellWidth);
+        const row = Math.floor((virtualY - this.offsetY) / this.cellHeight);
 
-        return { row, col }
+        return { row, col };
     }
     getWorldPos(row, col) {
         const x = this.offsetX + col * this.cellWidth + this.cellWidth / 2

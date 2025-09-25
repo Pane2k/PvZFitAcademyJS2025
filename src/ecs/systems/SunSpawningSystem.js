@@ -19,23 +19,34 @@ export default class SunSpawningSystem {
         }
         this.stopFallingSuns()
     }
-    spawnSun(){
-        const randomCol = Math.floor(Math.random()* this.grid.cols)
-        const randomRow = Math.floor(Math.random()* this.grid.rows)
-        
-       
+     spawnSun() {
+        if (!this.factory || !this.grid) return;
 
+        // 1. Выбираем целевую ячейку, куда солнце приземлится
+        const randomCol = Math.floor(Math.random() * this.grid.cols);
+        const randomRow = Math.floor(Math.random() * this.grid.rows);
         const targetPos = this.grid.getWorldPos(randomRow, randomCol);
 
+        // --- НОВАЯ, ПРАВИЛЬНАЯ ЛОГИКА РАСЧЕТА РАЗМЕРОВ ---
         const sunProto = this.factory.prototypes.sun;
-        const sunScale = sunProto.components.PositionComponent.scale || 1.0;
-        const sunHeight = this.grid.cellHeight * sunScale;
-        const sunWidth = this.grid.cellWidth * sunScale;
-        const startX = targetPos.x - sunWidth / 2; // <-- Коррекция по X
-        const startY = this.grid.offsetY - sunHeight;
+        const sunImage = this.factory.assetLoader.getImage(sunProto.components.SpriteComponent.assetKey);
+
+        // Если ассет еще не загружен (маловероятно, но для безопасности)
+        if (!sunImage || sunImage.height === 0) return;
+
+        const sunTargetHeight = sunProto.components.PositionComponent.height;
+        const aspectRatio = sunImage.width / sunImage.height;
+        // Рассчитываем АКТУАЛЬНУЮ ширину, как это делает Factory
+        const actualSunWidth = sunTargetHeight * aspectRatio;
+        // --- КОНЕЦ НОВОЙ ЛОГИКИ ---
+
+        // Теперь используем правильные размеры для вычисления стартовой позиции
+        const startX = targetPos.x - actualSunWidth / 2;
+        const startY = this.grid.offsetY - sunTargetHeight; // Используем правильную высоту
 
         const entityID = this.factory.create('sun', { x: startX, y: startY });
         if (entityID !== null) {
+            // Добавляем GridLocationComponent, чтобы система знала, куда солнце должно приземлиться
             this.world.addComponent(entityID, new GridLocationComponent(randomRow, randomCol));
         }
     }

@@ -4,6 +4,12 @@ export default class Renderer{
     constructor(canvas, virtualWidth, virtualHeight){
         this.canvas = canvas
         this.ctx = canvas.getContext('2d')
+        this.VIRTUAL_WIDTH = virtualWidth;
+        this.VIRTUAL_HEIGHT = virtualHeight;
+
+        this.scale = 1;
+        this.offsetX = 0;
+        this.offsetY = 0;
         
         window.addEventListener('resize', this.resize)
         this.resize()
@@ -11,10 +17,24 @@ export default class Renderer{
     }
 
     resize = () => {
-        Debug.log('Resize event triggered!'); // <-- Добавим лог для проверки
-        this.canvas.width = this.canvas.clientWidth;
-        this.canvas.height = this.canvas.clientHeight;
-        Debug.log(`Canvas resized to ${this.canvas.width}x${this.canvas.height}`);
+        const physicalWidth = this.canvas.clientWidth;
+        const physicalHeight = this.canvas.clientHeight;
+
+        this.canvas.width = physicalWidth;
+        this.canvas.height = physicalHeight;
+
+        // Расчет масштаба для сохранения пропорций (letterboxing)
+        const scaleX = physicalWidth / this.VIRTUAL_WIDTH;
+        const scaleY = physicalHeight / this.VIRTUAL_HEIGHT;
+        this.scale = Math.min(scaleX, scaleY);
+
+        // Расчет отступов для центрирования
+        const scaledWidth = this.VIRTUAL_WIDTH * this.scale;
+        const scaledHeight = this.VIRTUAL_HEIGHT * this.scale;
+        this.offsetX = (physicalWidth - scaledWidth) / 2;
+        this.offsetY = (physicalHeight - scaledHeight) / 2;
+        
+        Debug.log(`Canvas resized. Scale: ${this.scale.toFixed(2)}, Offset: (${this.offsetX.toFixed(2)}, ${this.offsetY.toFixed(2)})`);
     }
 
     clear(color = 'black'){
@@ -22,22 +42,62 @@ export default class Renderer{
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height)
     }
 
-    drawImage(image, x, y, width, height){
-        if (!image || image.width === 0 || image.height === 0) {
-            // Debug.warn('Attempted to draw an invalid or unloaded image.');
-            return
-        }
-
-        if(width && height){
-            this.ctx.drawImage(image, x, y, width, height)
-        } else{
-            this.ctx.drawImage(image, x, y)
-        }
+    drawImage(image, virtualX, virtualY, virtualW, virtualH){
+        if (!image || image.width === 0 || image.height === 0) return;
+        
+        this.ctx.drawImage(
+            image,
+            virtualX * this.scale + this.offsetX,
+            virtualY * this.scale + this.offsetY,
+            virtualW * this.scale,
+            virtualH * this.scale
+        );
     }
 
-    drawRect(x, y, width, height, strokeColor, lineWidth = 1){
+    drawRect(virtualX, virtualY, virtualW, virtualH, strokeColor, lineWidth = 1) {
         this.ctx.strokeStyle = strokeColor;
         this.ctx.lineWidth = lineWidth;
-        this.ctx.strokeRect(x, y, width, height);
+        this.ctx.strokeRect(
+            virtualX * this.scale + this.offsetX,
+            virtualY * this.scale + this.offsetY,
+            virtualW * this.scale,
+            virtualH * this.scale
+        );
+    }
+    drawPartialImage(image, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight) {
+        if (!image || image.width === 0 || image.height === 0) return;
+
+        this.ctx.drawImage(
+            image,
+            sx, sy, sWidth, sHeight,
+            dx * this.scale + this.offsetX,
+            dy * this.scale + this.offsetY,
+            dWidth * this.scale,
+            dHeight * this.scale
+        );
+    }
+    drawText(text, virtualX, virtualY, font, color, textAlign = 'left', textBaseline = 'top') {
+        this.ctx.save();
+
+        // 1. Масштабируем размер шрифта
+        const parts = font.split(' ');
+        const virtualSize = parseFloat(parts[0]);
+        const physicalSize = virtualSize * this.scale;
+        const scaledFont = `${physicalSize}px ${parts.slice(1).join(' ')}`;
+
+        // 2. Устанавливаем свойства контекста
+        this.ctx.font = scaledFont;
+        this.ctx.fillStyle = color;
+        this.ctx.textAlign = textAlign;
+        this.ctx.textBaseline = textBaseline;
+
+        // 3. Преобразуем виртуальные координаты в физические
+        const physicalX = virtualX * this.scale + this.offsetX;
+        const physicalY = virtualY * this.scale + this.offsetY;
+
+        // 4. Отрисовываем текст
+        this.ctx.fillText(text, physicalX, physicalY);
+
+        this.ctx.restore();
     }
 }

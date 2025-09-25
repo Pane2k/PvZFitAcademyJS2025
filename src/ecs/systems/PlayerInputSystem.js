@@ -1,6 +1,7 @@
 import eventBus from "../../core/EventBus.js";
 import Debug from "../../core/Debug.js";
 import RemovalComponent from "../components/RemovalComponent.js";
+import UITravelComponent from "../components/UITravelComponent.js"
 
 export default class PlayerInputSystem{
     constructor(game, grid, hud){
@@ -40,9 +41,26 @@ export default class PlayerInputSystem{
             const pos = this.world.getComponent(entityID, 'PositionComponent');
             if (position.x >= pos.x && position.x <= pos.x + pos.width &&
                 position.y >= pos.y && position.y <= pos.y + pos.height) {
-                Debug.log(`Collected sun (entity ${entityID})!`);
-                eventBus.publish('sun:collected', { value: 25 });
-                this.world.addComponent(entityID, new RemovalComponent());
+                
+                Debug.log(`Collected sun (entity ${entityID})! Starting animation.`);
+                
+                // --- НОВАЯ ЛОГИКА ---
+                const sunValue = 25; // Можно будет вынести в компонент, если нужно
+
+                // 1. МОМЕНТАЛЬНО ПУБЛИКУЕМ СОБЫТИЕ
+                eventBus.publish('sun:collected', { value: sunValue });
+
+                // 2. ЗАПУСКАЕМ АНИМАЦИЮ
+                const targetPos = this.hud.getSunCounterPosition();
+                this.world.addComponent(entityID, new UITravelComponent(targetPos.x, targetPos.y, 2000)); // <-- Возвращаем скорость!
+
+                // 3. УДАЛЯЕМ КОМПОНЕНТЫ, ЧТОБЫ СОЛНЦЕ НЕЛЬЗЯ БЫЛО СОБРАТЬ ДВАЖДЫ
+                this.world.removeComponent(entityID, 'CollectibleComponent');
+                this.world.removeComponent(entityID, 'HitboxComponent');
+                this.world.removeComponent(entityID, 'GridLocationComponent');
+                this.world.removeComponent(entityID, 'LifetimeComponent');
+                // --- КОНЕЦ НОВОЙ ЛОГИКИ ---
+
                 return; // Завершаем обработку
             }
         }

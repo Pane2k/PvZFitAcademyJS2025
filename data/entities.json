@@ -2,44 +2,71 @@
     "peashooter": {
         "cost": 100,
         "components": {
-            "PositionComponent": {
-                "scale": 0.9 
-            },
-            "SpriteComponent": {
-                "assetKey": "peashooter"
-            },
-            "RenderableComponent": {},
-            "GridLocationComponent": {} 
+            "PositionComponent": { "height": 70 }, 
+            "SpriteComponent": { "assetKey": "peashooter" },
+            "RenderableComponent": { "layer": 2 },
+            "GridLocationComponent": {},
+            "HealthComponent": { "maxHealth": 200 },
+            "PlantComponent": {},
+            "HitboxComponent": { "offsetX": 40, "offsetY": 5, "width": 22, "height": 62 },
+            "ShootsProjectilesComponent": { "projectileName": "pea", "fireRate": 2, "projectileSpeed": 250 }
+        }
+    },
+    "pea": {
+        "components": {
+            "PositionComponent": { "height": 50 },
+            "SpriteComponent": { "assetKey": "pea" },
+            "RenderableComponent": { "layer": 3 },
+            "VelocityComponent": {},
+            "ProjectileComponent": { "damage": 25 },
+            "HitboxComponent": { "offsetX": 12.5, "offsetY": 12.5, "width": 25, "height": 25 },
+            "OutOfBoundsRemovalComponent": {}
         }
     },
     "sun": {
         "components": {
-            "PositionComponent": { "scale": 0.8 },
+            "PositionComponent": { "height": 65 }, 
             "SpriteComponent": { "assetKey": "sun" },
-            "RenderableComponent": {},
+            "RenderableComponent": { "layer": 3 },
             "VelocityComponent": { "vx": 0, "vy": 40 },
             "CollectibleComponent": {},
             "GridLocationComponent": {},
-            "LifetimeComponent": { "duration": 10 }
+            "HitboxComponent": { "offsetX": 0, "offsetY": 0, "width": 64, "height": 64 }
         }
     },
     "zombie_basic": {
         "spawnCost": 1,
         "components": {
-            "PositionComponent": { "scale": 0.8 },
+            "PositionComponent": { "height": 90 },
             "SpriteComponent": { "assetKey": "zombie_basic" },
-            "RenderableComponent": {},
+            "RenderableComponent": { "layer": 2 },
             "HealthComponent": { "maxHealth": 100 },
-            "VelocityComponent": { 
-                "baseSpeed": -20,
-                "speedVariance": 5
-            },
-            "HitboxComponent": {
-                "offsetX": 25,
-                "offsetY": 5,
-                "width": 30,
-                "height": 90
-            }
+            "MeleeAttackComponent": { "damage": 50, "attackRate": 1.5 },
+            "VelocityComponent": { "baseSpeed": -20, "speedVariance": 5 },
+            "HitboxComponent": { "offsetX": 25, "offsetY": 5, "width": 30, "height": 90 },
+            "ZombieComponent": {}
+        }
+    },
+    "lawnmower": {
+        "components": {
+            "PositionComponent": { "height": 70 },
+            "SpriteComponent": { "assetKey": "lawnmower" },
+            "RenderableComponent": { "layer": 1 },
+            "HitboxComponent": { "offsetX": 0, "offsetY": 0, "width": 70, "height": 70 },
+            "LawnmowerComponent": {}
+        }
+    },
+    "sunflower": {
+        "cost": 50,
+        "components": {
+            "PositionComponent": { "height": 70 },
+            "SpriteComponent": { "assetKey": "sunflower" },
+            "RenderableComponent": { "layer": 2 },
+            "GridLocationComponent": {},
+            "HealthComponent": { "maxHealth": 200 },
+            "PlantComponent": {},
+            "HitboxComponent": { "offsetX": 15, "offsetY": 5, "width": 40, "height": 65 },
+            "SunProducerComponent": { "productionRate": 15, "sunValue": 25 }
         }
     }
 }
