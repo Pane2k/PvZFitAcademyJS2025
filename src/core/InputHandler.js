@@ -14,12 +14,23 @@ export default class InputHandler{
             const pos = this.getCanvasCoordinates(event.clientX, event.clientY);
             eventBus.publish('input:click', pos);
         });
+        this.canvas.addEventListener('mousemove', (event) => {
+            const pos = this.getCanvasCoordinates(event.clientX, event.clientY);
+            eventBus.publish('input:move', pos);
+        });
 
         this.canvas.addEventListener('touchstart', (event) => {
             event.preventDefault();
             const touch = event.touches[0];
             const pos = this.getCanvasCoordinates(touch.clientX, touch.clientY);
             eventBus.publish('input:click', pos);
+        }, { passive: false });
+        
+        this.canvas.addEventListener('touchmove', (event) => {
+            event.preventDefault();
+            const touch = event.touches[0];
+            const pos = this.getCanvasCoordinates(touch.clientX, touch.clientY);
+            eventBus.publish('input:move', pos);
         }, { passive: false });
     }
     setupKeyboardListeners() {

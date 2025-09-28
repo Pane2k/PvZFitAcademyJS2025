@@ -1,5 +1,8 @@
 import Debug from "../../core/Debug.js";
 import LifetimeComponent from "../components/LifetimeComponent.js";
+import ArcMovementComponent from "../components/ArcMovementComponent.js"
+import TintEffectComponent from "../components/TintEffectComponent.js"
+import CollectibleComponent from "../components/CollectibleComponent.js"
 
 export default class SunProductionSystem {
     constructor() {
@@ -9,14 +12,40 @@ export default class SunProductionSystem {
     update(deltaTime) {
         const producers = this.world.getEntitiesWithComponents('SunProducerComponent', 'PositionComponent');
         if (producers.length === 0) return;
+        const GLOW_DURATION = 2.0
+        const FADE_IN_TIME = 1.0;
 
         for (const entityId of producers) {
             const producer = this.world.getComponent(entityId, 'SunProducerComponent');
             producer.timer += deltaTime;
 
+            const timeLeft = producer.productionRate - producer.timer;
+            const isGlowing = this.world.getComponent(entityId, 'TintEffectComponent');
+
+            if (timeLeft <= GLOW_DURATION && !isGlowing) {
+                this.world.addComponent(entityId, new TintEffectComponent(
+                    '255, 255, 0',    // Базовый желтый цвет
+                    0.4,              // Максимальная яркость
+                    GLOW_DURATION,    // Длительность 2 сек
+                    FADE_IN_TIME      // Появление за 1 сек
+                ));
+                Debug.log(`Sunflower ${entityId} started glowing (fade-in).`);
+            }
+
             if (producer.timer >= producer.productionRate) {
                 producer.timer = 0; // Сбрасываем таймер
-                this.spawnSunNearProducer(entityId, producer.sunValue);
+                this.spawnSunNearProducer(entityId);
+                this.world.removeComponent(entityId, 'TintEffectComponent'); 
+                
+                const FADE_OUT_TIME = 0.25;
+                this.world.addComponent(entityId, new TintEffectComponent(
+                    '255, 255, 0',
+                    0.4,
+                    FADE_OUT_TIME,
+                    0, // Без появления
+                    FADE_OUT_TIME // Только затухание
+                ));
+                Debug.log(`Sunflower ${entityId} started cooling down (fade-out).`);
             }
         }
     }
@@ -36,6 +65,20 @@ export default class SunProductionSystem {
         if (sunId !== null) {
             // Удаляем компонент скорости, т.к. это солнце не падает с неба
             this.world.removeComponent(sunId, 'VelocityComponent');
+
+            const initialVy = -20; // Начальный импульс вверх (отрицательное значение)
+            const initialVx = (Math.random() - 0.5) * 100; // Небольшой случайный разброс по горизонтали
+            const gravity = 200; // Сила, которая будет тянуть солнце вниз
+            const landingOffsetY = 30; 
+            const targetY = pos.y + landingOffsetY;
+
+            // Добавляем наш новый компонент, чтобы запустить анимацию
+            this.world.addComponent(sunId, new ArcMovementComponent(initialVx, initialVy, gravity, targetY));
+
+            
+            const sunProto = this.world.factory.prototypes.sun;
+            const sunValue = sunProto.value || 25;
+            this.world.addComponent(sunId, new CollectibleComponent(sunValue));
             // Добавляем время жизни, чтобы оно не лежало вечно
             this.world.addComponent(sunId, new LifetimeComponent(10));
             Debug.log(`Sunflower ${producerId} produced sun ${sunId}.`);

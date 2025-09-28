@@ -17,6 +17,10 @@ export default class WaveSystem {
         this.totalSpawnPoints = this.levelData.waves.reduce((sum, wave) => sum + wave.spawnPoints, 0);
         this.spawnPointsSpent = 0;
 
+        this.isWaitingForHugeWave = false;
+        this.announcementTimer = 0;
+        this.ANNOUNCEMENT_DURATION = 4.0; 
+
         this.setupZombiePool();
         this.publishProgress();
     }
@@ -31,53 +35,74 @@ export default class WaveSystem {
     update(deltaTime) {
         if (!this.factory || !this.factory.grid) return;
 
+        if (this.isWaitingForHugeWave) {
+            this.announcementTimer -= deltaTime;
+            if (this.announcementTimer <= 0) {
+                this.isWaitingForHugeWave = false;
+                this.spawnHugeWave(); // Запускаем саму волну
+            }
+            return;
+        }
+
         // Пока просто запускаем волны по таймеру
         this.waveTimer -= deltaTime;
         if (this.waveTimer <= 0 && this.currentWaveIndex < this.levelData.waves.length - 1) {
-            this.spawnNextWave();
+            this.prepareNextWave();
         }
-        if (this.currentWaveIndex >= this.levelData.waves.length - 1 &&
+
+        if (!this.isWaitingForHugeWave && 
+            this.currentWaveIndex >= this.levelData.waves.length - 1 &&
             this.world.getEntitiesWithComponents('ZombieComponent').length === 0) 
         {
-            this.isCompleted = true;
-            Debug.log("--- ALL WAVES DEFEATED! YOU WIN! ---");
-            eventBus.publish('game:win');
-            this.world.removeSystem(this); // Отключаем систему
+            // Дополнительная проверка: убедимся, что мы уже потратили все очки спавна.
+            // Это предотвратит победу, если последняя волна была "огромной", но еще не заспавнилась.
+            if (this.spawnPointsSpent >= this.totalSpawnPoints) {
+                this.isCompleted = true;
+                Debug.log("--- ALL WAVES DEFEATED! YOU WIN! ---");
+                eventBus.publish('game:win');
+                this.world.removeSystem(this);
+            }
         }
     }
 
-    spawnNextWave() {
+    prepareNextWave() {
         this.currentWaveIndex++;
-        // if (this.currentWaveIndex >= this.levelData.waves.length) {
-        //     Debug.log("All waves completed!");
-        //     // В будущем здесь будет логика победы
-        //     this.world.removeSystem(this); // Отключаем систему
-        //     return;
-        // }
-
         const waveData = this.levelData.waves[this.currentWaveIndex];
+        
+        // Если это большая волна, запускаем объявление
+        if (waveData.type === 'huge') {
+            eventBus.publish('hud:show_huge_wave_announcement');
+            this.isWaitingForHugeWave = true;
+            this.announcementTimer = this.ANNOUNCEMENT_DURATION;
+            // Сама волна заспавнится позже, когда таймер истечет
+        } else {
+            // Обычные волны спавнятся сразу
+            this.spawnWave(waveData);
+        }
+    }
+
+    spawnWave(waveData) {
         this.waveTimer = waveData.delayAfter;
         Debug.log(`--- Spawning Wave ${this.currentWaveIndex + 1} ---`, waveData);
-
+        
         let budget = waveData.spawnPoints;
-        this.spawnPointsSpent += budget; // <-- Обновляем счетчик
+        this.spawnPointsSpent += budget;
         const spawnList = [];
 
-        // Алгоритм "покупки" зомби
         while (budget > 0) {
             const affordableZombies = this.zombiePool.filter(z => z.cost <= budget);
-            if (affordableZombies.length === 0) {
-                Debug.warn(`Cannot spend remaining budget of ${budget}. No affordable zombies.`);
-                break;
-            }
+            if (affordableZombies.length === 0) break;
             const chosenZombie = affordableZombies[Math.floor(Math.random() * affordableZombies.length)];
             spawnList.push(chosenZombie.name);
             budget -= chosenZombie.cost;
         }
         
-        // Одновременный спавн всей собранной группы
         this.spawnGroup(spawnList);
-        this.publishProgress()
+        this.publishProgress();
+    }
+    spawnHugeWave() {
+        const waveData = this.levelData.waves[this.currentWaveIndex];
+        this.spawnWave(waveData);
     }
     publishProgress() {
         const hugeWaveIndices = this.levelData.waves.map((wave, index) => wave.type === 'huge' ? index : -1).filter(index => index !== -1);

@@ -22,6 +22,9 @@ import MeleeAttackSystem from "../../ecs/systems/MeleeAttackSystem.js"
 import LawnmowerSystem from "../../ecs/systems/LawnmowerSystem.js"
 import SunProductionSystem from "../../ecs/systems/SunProductionSystem.js";
 import UITravelSystem from "../../ecs/systems/UITravelSystem.js"
+import ArcMovementSystem from "../../ecs/systems/ArcMovementSystem.js"
+import EffectSystem from "../../ecs/systems/EffectSystem.js"
+import MouseFollowingSystem from "../../ecs/systems/MouseFollowingSystem.js"
 
 import Grid from "../Grid.js";
 import Factory from "../Factory.js";
@@ -124,11 +127,13 @@ export default class GameplayState extends BaseState{
         this.lawnmowerSystem = new LawnmowerSystem();
         this.sunProductionSystem = new SunProductionSystem();
         this.uiTravelSystem = new UITravelSystem();
+        this.arcMovementSystem = new ArcMovementSystem()
+        this.effectSystem = new EffectSystem()
+        
 
         this.setupGrid();
-
         this.gameOverSystem = new GameOverSystem(this.grid.offsetX - 30)
-
+        this.mouseFollowingSystem = new MouseFollowingSystem(this.grid)
 
         this.game.world.addSystem(this.renderSystem)
         this.game.world.addSystem(this.playerInputSystem)
@@ -147,7 +152,9 @@ export default class GameplayState extends BaseState{
         this.game.world.addSystem(this.lawnmowerSystem);
         this.game.world.addSystem(this.sunProductionSystem);
         this.game.world.addSystem(this.uiTravelSystem);
-
+        this.game.world.addSystem(this.arcMovementSystem)
+        this.game.world.addSystem(this.effectSystem)
+        this.game.world.addSystem(this.mouseFollowingSystem)
         
         this.createLawnmowers()
         this.game.world.grid = this.grid;
@@ -168,6 +175,7 @@ export default class GameplayState extends BaseState{
     }
     update(deltaTime){
         this.game.world.update(deltaTime)
+        this.hud.update(deltaTime)
         this.debugOverlay.update(deltaTime, this.game.world);
         
     }

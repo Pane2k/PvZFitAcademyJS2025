@@ -1,6 +1,8 @@
 import Debug from "../../core/Debug.js";
 import GridLocationComponent from "../components/GridLocationComponent.js";
 import LifetimeComponent from "../components/LifetimeComponent.js";
+import CollectibleComponent from "../components/CollectibleComponent.js"
+
 export default class SunSpawningSystem {
     constructor(grid, factory){
         this.world = null
@@ -19,7 +21,7 @@ export default class SunSpawningSystem {
         }
         this.stopFallingSuns()
     }
-     spawnSun() {
+    spawnSun() {
         if (!this.factory || !this.grid) return;
 
         // 1. Выбираем целевую ячейку, куда солнце приземлится
@@ -48,6 +50,9 @@ export default class SunSpawningSystem {
         if (entityID !== null) {
             // Добавляем GridLocationComponent, чтобы система знала, куда солнце должно приземлиться
             this.world.addComponent(entityID, new GridLocationComponent(randomRow, randomCol));
+            const sunProto = this.factory.prototypes.sun;
+            const sunValue = sunProto.value || 25; // Запасной вариант
+            this.world.addComponent(entityID, new CollectibleComponent(sunValue));
         }
     }
     stopFallingSuns(){

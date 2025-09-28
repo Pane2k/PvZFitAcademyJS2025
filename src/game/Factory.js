@@ -19,6 +19,9 @@ import PrefabComponent from "../ecs/components/PrefabComponent.js"
 import ZombieComponent from "../ecs/components/ZombieComponent.js"
 import LawnmowerComponent from "../ecs/components/LawnmowerComponent.js"
 import SunProducerComponent from "../ecs/components/SunProducerComponent.js";
+import ArcMovementComponent from "../ecs/components/ArcMovementComponent.js"
+import TintEffectComponent from "../ecs/components/TintEffectComponent.js"
+import GhostPlantComponent from "../ecs/components/GhostPlantComponent.js"
 
 const componentMap = {
     PositionComponent, 
@@ -40,7 +43,10 @@ const componentMap = {
     PrefabComponent,
     ZombieComponent,
     LawnmowerComponent,
-    SunProducerComponent
+    SunProducerComponent,
+    ArcMovementComponent,
+    TintEffectComponent,
+    GhostPlantComponent
 
 }
 
@@ -119,6 +125,9 @@ export default class Factory{
                 component = new CompClass(protoData.damage, protoData.attackRate);
             }else if (compName === 'SunProducerComponent') { 
                 component = new CompClass(protoData.productionRate, protoData.sunValue);
+            }else if (compName === 'CollectibleComponent') {
+                const proto = this.prototypes[name];
+                component = new CompClass(proto.value || 0);
             }
             else {
                 component = new CompClass()

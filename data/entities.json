@@ -1,6 +1,7 @@
 {
     "peashooter": {
         "cost": 100,
+        "cooldown": 7.5,
         "components": {
             "PositionComponent": { "height": 70 }, 
             "SpriteComponent": { "assetKey": "peashooter" },
@@ -24,6 +25,7 @@
         }
     },
     "sun": {
+        "value": 25,
         "components": {
             "PositionComponent": { "height": 65 }, 
             "SpriteComponent": { "assetKey": "sun" },
@@ -58,6 +60,7 @@
     },
     "sunflower": {
         "cost": 50,
+        "cooldown": 7.5,
         "components": {
             "PositionComponent": { "height": 70 },
             "SpriteComponent": { "assetKey": "sunflower" },
@@ -66,7 +69,7 @@
             "HealthComponent": { "maxHealth": 200 },
             "PlantComponent": {},
             "HitboxComponent": { "offsetX": 15, "offsetY": 5, "width": 40, "height": 65 },
-            "SunProducerComponent": { "productionRate": 15, "sunValue": 25 }
+            "SunProducerComponent": { "productionRate": 5 }
         }
     }
 }

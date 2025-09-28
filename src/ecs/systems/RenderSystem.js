@@ -3,6 +3,9 @@ export default class RenderSystem{
     constructor(renderer){
         this.renderer = renderer
         this.world = null
+
+        this.offscreenCanvas = document.createElement('canvas');
+        this.offscreenCtx = this.offscreenCanvas.getContext('2d');
     }
     update(){
         const entitiesToRender = this.world.getEntitiesWithComponents('PositionComponent', 'SpriteComponent', 'RenderableComponent')
@@ -14,14 +17,23 @@ export default class RenderSystem{
         for(const entityID of entitiesToRender){
             const pos = this.world.getComponent(entityID, 'PositionComponent')
             const sprite = this.world.getComponent(entityID, 'SpriteComponent')
-
-            // Debug.log('Rendering entity:', entityID, 
-            // 'Image:', sprite.image, 
-            // `Image size: ${sprite.image.width}x${sprite.image.height}`,
-            // 'Pos:', pos);
+            const tint = this.world.getComponent(entityID, 'TintEffectComponent')
+            const ghost = this.world.getComponent(entityID, 'GhostPlantComponent')
 
             if (sprite && sprite.image) {
-                this.renderer.drawImage(sprite.image, pos.x, pos.y, pos.width, pos.height);
+                const ctx = this.renderer.ctx;
+                ctx.save();
+                if (ghost) {
+                    ctx.globalAlpha = 0.6;
+                }
+
+                if (tint) {
+                    const currentColor = tint.getCurrentColor(); 
+                    this.drawTintedImage(sprite.image, pos.x, pos.y, pos.width, pos.height, currentColor);
+                } else {
+                    this.renderer.drawImage(sprite.image, pos.x, pos.y, pos.width, pos.height);
+                }
+                ctx.restore();
             }
 
             
@@ -82,5 +94,24 @@ export default class RenderSystem{
             }
         
         }
+    }
+    drawTintedImage(image, x, y, width, height, color) {
+        // Устанавливаем размер временного холста под размер изображения
+        this.offscreenCanvas.width = image.width;
+        this.offscreenCanvas.height = image.height;
+
+        // 1. Рисуем оригинальное изображение на временный холст
+        this.offscreenCtx.drawImage(image, 0, 0);
+
+        // 2. Накладываем цвет только на непрозрачные пиксели
+        this.offscreenCtx.globalCompositeOperation = 'source-atop';
+        this.offscreenCtx.fillStyle = color;
+        this.offscreenCtx.fillRect(0, 0, image.width, image.height);
+
+        // Сбрасываем операцию композиции для будущих вызовов
+        this.offscreenCtx.globalCompositeOperation = 'source-over';
+
+        // 3. Рисуем результат с временного холста на основной
+        this.renderer.drawImage(this.offscreenCanvas, x, y, width, height);
     }
 }
