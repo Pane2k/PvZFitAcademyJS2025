@@ -14,7 +14,10 @@ class EventBus{
         if(!this.listeners[eventName]){
             return
         }
-        Debug.log(`Event published: '${eventName}' with data:`, data)
+        if (eventName !== 'input:move') {
+            Debug.log(`Event published: '${eventName}' with data:`, data);
+        }
+        // Debug.log(`Event published: '${eventName}' with data:`, data)
         this.listeners[eventName].forEach(callback => callback(data))
     }
 }

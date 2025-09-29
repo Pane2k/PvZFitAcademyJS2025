@@ -25,6 +25,7 @@ import UITravelSystem from "../../ecs/systems/UITravelSystem.js"
 import ArcMovementSystem from "../../ecs/systems/ArcMovementSystem.js"
 import EffectSystem from "../../ecs/systems/EffectSystem.js"
 import MouseFollowingSystem from "../../ecs/systems/MouseFollowingSystem.js"
+import CursorFollowingSystem from "../../ecs/systems/CursorFollowingSystem.js"
 
 import Grid from "../Grid.js";
 import Factory from "../Factory.js";
@@ -129,7 +130,7 @@ export default class GameplayState extends BaseState{
         this.uiTravelSystem = new UITravelSystem();
         this.arcMovementSystem = new ArcMovementSystem()
         this.effectSystem = new EffectSystem()
-        
+        this.cursorFollowingSystem = new CursorFollowingSystem()
 
         this.setupGrid();
         this.gameOverSystem = new GameOverSystem(this.grid.offsetX - 30)
@@ -155,7 +156,8 @@ export default class GameplayState extends BaseState{
         this.game.world.addSystem(this.arcMovementSystem)
         this.game.world.addSystem(this.effectSystem)
         this.game.world.addSystem(this.mouseFollowingSystem)
-        
+        this.game.world.addSystem(this.cursorFollowingSystem);
+
         this.createLawnmowers()
         this.game.world.grid = this.grid;
         this.background = new Background(
@@ -208,18 +210,20 @@ export default class GameplayState extends BaseState{
             // this.grid.draw(this.game.renderer);
         }
         // Шаг 3 Основной рендер из системы рендеринга
-        if(this.renderSystem){
-            this.renderSystem.update()
+        if (this.renderSystem) {
+            this.renderSystem.update(0, 99);
         }
-        if (this.background) {
-            // this.background.drawFront(this.game.renderer);
-        }
-        // Шаг 4 Рисование UI в последнюю очередь
-        this.debugOverlay.draw(this.game.renderer);
-        if(this.hud){
+        if (this.hud) {
             const selectedPlant = this.playerInputSystem ? this.playerInputSystem.selectedPlant : null;
             this.hud.draw(this.game.renderer, selectedPlant);
         }
+        if (this.renderSystem) {
+            this.renderSystem.update(100, Infinity);
+        }
+        
+        // Шаг 4 Рисование UI в последнюю очередь
+        this.debugOverlay.draw(this.game.renderer);
+        
     }
 
     handleKeyDown(data) {

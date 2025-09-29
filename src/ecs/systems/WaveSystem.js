@@ -62,7 +62,7 @@ export default class WaveSystem {
                 eventBus.publish('game:win');
                 this.world.removeSystem(this);
             }
-        }
+        }   
     }
 
     prepareNextWave() {

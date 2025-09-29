@@ -8,7 +8,7 @@ export default class HUD {
         this.cardBackgroundImage = null;
         this.sunIconImage = null;
         this.plantCards = []; 
-        this.cardFont = '18px Arial'; 
+        this.cardFont = '16px Arial'; 
         this.uiPanel = {
             x: 0, y: 0, width: 0, height: 0,
             image: null
@@ -74,7 +74,7 @@ export default class HUD {
         // 3. Настройка карточек
         const cardWidth = 75;
         const cardHeight = 90;
-        this.cardFont = `${Math.round(cardHeight * 0.22)}px Arial`;
+        this.cardFont = `${Math.round(cardHeight * 0.17)}px Arial`;
         const cardSpacing = 10;
         const cardsTotalWidth = availablePlants.length * (cardWidth + cardSpacing);
 
@@ -83,8 +83,8 @@ export default class HUD {
         this.uiPanel.x = 10; // Небольшой отступ слева
 
         // 4. Расчет позиций элементов ВНУТРИ панели
-        this.sunCounter.x = this.uiPanel.x + 25;
-        this.sunCounter.y = this.uiPanel.y + panelHeight / 2;
+        this.sunCounter.x = this.uiPanel.x + 50;
+        this.sunCounter.y = this.uiPanel.y + panelHeight / 2 + 15;
         
         let currentX = this.uiPanel.x + sunCounterWidth;
         const cardY = this.uiPanel.y + (panelHeight - cardHeight) / 2;
@@ -105,6 +105,7 @@ export default class HUD {
             currentX += cardWidth + cardSpacing;
         }
 
+        // Расчеты ProgressBar
         this.progressBar.image = assetLoader.getImage('ui_progress_bar');
         this.progressBar.flagImage = assetLoader.getImage('ui_progress_flag');
         this.progressBar.headImage = assetLoader.getImage('ui_zombie_head');
@@ -344,16 +345,16 @@ export default class HUD {
             const centerAreaX = card.rect.x + card.rect.width / 2;    // Горизонтальный центр карточки
 
             // Сдвигаем текст немного влево от центра
-            const textX = centerAreaX - 5; 
-
+            const textX = centerAreaX -2; 
+            const textY = bottomAreaY + 1
             // Рисуем текст с выравниванием по правому краю от новой точки
             renderer.drawText(
                 costText,
                 textX,
-                bottomAreaY,
+                textY,
                 this.cardFont,
                 'black',
-                'right', // <-- ВЫРАВНИВАНИЕ ПО ПРАВОМУ КРАЮ
+                'center', // <-- ВЫРАВНИВАНИЕ ПО ПРАВОМУ КРАЮ
                 'middle'
             );
 
@@ -361,7 +362,7 @@ export default class HUD {
             if (this.sunIconImage) {
                 const iconSize = 20;
                 // Иконка теперь тоже привязана к центру, но со смещением вправо
-                const iconX = centerAreaX - 2;
+                const iconX = centerAreaX + 15;
                 const iconY = bottomAreaY - iconSize / 2;
 
                 renderer.drawImage(this.sunIconImage, iconX, iconY, iconSize, iconSize);

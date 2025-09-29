@@ -22,6 +22,8 @@ import SunProducerComponent from "../ecs/components/SunProducerComponent.js";
 import ArcMovementComponent from "../ecs/components/ArcMovementComponent.js"
 import TintEffectComponent from "../ecs/components/TintEffectComponent.js"
 import GhostPlantComponent from "../ecs/components/GhostPlantComponent.js"
+import HiddenComponent from "../ecs/components/HiddenComponent.js"
+import CursorAttachmentComponent from "../ecs/components/CursorAttachmentComponent.js"
 
 const componentMap = {
     PositionComponent, 
@@ -46,7 +48,9 @@ const componentMap = {
     SunProducerComponent,
     ArcMovementComponent,
     TintEffectComponent,
-    GhostPlantComponent
+    GhostPlantComponent,
+    HiddenComponent,
+    CursorAttachmentComponent 
 
 }
 
@@ -128,7 +132,9 @@ export default class Factory{
             }else if (compName === 'CollectibleComponent') {
                 const proto = this.prototypes[name];
                 component = new CompClass(proto.value || 0);
-            }
+            }else if (compName === 'RenderableComponent') {
+                component = new CompClass(protoData.layer || 0);
+            } 
             else {
                 component = new CompClass()
             }

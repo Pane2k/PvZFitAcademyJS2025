@@ -1,6 +1,6 @@
 export default class Debug{
     static isEnabled = true
-    static showHitboxes = true
+    static showHitboxes = false
     static showInteractables = false
     static showHealthBars = false
     

@@ -4,6 +4,7 @@ import RemovalComponent from "../components/RemovalComponent.js";
 import UITravelComponent from "../components/UITravelComponent.js"
 import PrefabComponent from "../components/PrefabComponent.js"
 import GhostPlantComponent from "../components/GhostPlantComponent.js";
+import CursorAttachmentComponent from "../components/CursorAttachmentComponent.js"
 
 export default class PlayerInputSystem{
     constructor(game, grid, hud){
@@ -14,7 +15,8 @@ export default class PlayerInputSystem{
         this.hud = hud
 
         this.selectedPlant = null
-        this.ghostPlantId = null;
+        this.ghostPlantId = null
+        this.cursorPlantId = null
 
         eventBus.subscribe('input:click', this.handleClick.bind(this))
         Debug.log('PlayerInputSystem subscribed to input:click event.')
@@ -37,21 +39,22 @@ export default class PlayerInputSystem{
             if (this.hud.sunCount >= plantData.cost) {
                 if (this.selectedPlant === clickedCardName) {
                     this.selectedPlant = null;
-                    this._destroyGhostPlant(); // <-- Уничтожаем призрака
+                    this._destroySelectionVisuals(); // <-- ИСПОЛЬЗУЕМ ОБНОВЛЕННЫЙ МЕТОД
                 } else {
                     this.selectedPlant = clickedCardName;
-                    this._createGhostPlant(clickedCardName); // <-- Создаем призрака
+                    this._createSelectionVisuals(clickedCardName); // <-- ИСПОЛЬЗУЕМ ОБНОВЛЕННЫЙ МЕТОД
                 }
                 Debug.log(`Selected plant is now: ${this.selectedPlant}`);
             } else {
                 Debug.log(`Not enough sun for ${clickedCardName}.`);
                 this.selectedPlant = null;
-                this._destroyGhostPlant();
+                this._destroySelectionVisuals(); // <-- ИСПОЛЬЗУЕМ ОБНОВЛЕННЫЙ МЕТОД
             }
-            return true; // Клик поглощен UI
+            return true;
         }
         return false;
     }
+
     _handleClickOnCollectible(position) {
         const collectibles = this.world.getEntitiesWithComponents('CollectibleComponent', 'PositionComponent');
         for (const entityID of collectibles) {
@@ -61,16 +64,12 @@ export default class PlayerInputSystem{
                 
                 Debug.log(`Collected resource (entity ${entityID})! Starting animation.`);
                 
-                // --- САМОЕ ПРАВИЛЬНОЕ РЕШЕНИЕ ---
                 const collectibleComp = this.world.getComponent(entityID, 'CollectibleComponent');
                 const resourceValue = collectibleComp.value;
-                // ---
 
                 eventBus.publish('sun:collected', { value: resourceValue });
 
                 const targetPos = this.hud.getSunCounterPosition();
-                // Мы передаем resourceValue в UITravelComponent, хотя он и не используется,
-                // на случай, если в будущем захотим показывать цифры урона/сбора.
                 this.world.addComponent(entityID, new UITravelComponent(targetPos.x, targetPos.y, 1200));
 
                 this.world.removeComponent(entityID, 'CollectibleComponent');
@@ -78,11 +77,12 @@ export default class PlayerInputSystem{
                 this.world.removeComponent(entityID, 'GridLocationComponent');
                 this.world.removeComponent(entityID, 'LifetimeComponent');
                 
-                return true; // Клик поглощен сбором ресурса
+                return true;
             }
         }
         return false;
     }
+
     _handleClickOnGrid(position) {
         if (!this.selectedPlant) return false;
 
@@ -90,7 +90,7 @@ export default class PlayerInputSystem{
         if (gridCoords) {
             if (this.grid.isCellOccupied(gridCoords.row, gridCoords.col)) {
                 Debug.log('Cell is already occupied.');
-                return false; // Клик по занятой ячейке не сбрасывает выбор
+                return false;
             }
 
             const plantData = this.factory.prototypes[this.selectedPlant];
@@ -103,30 +103,31 @@ export default class PlayerInputSystem{
                 if (entityId !== null) {
                     this.grid.placeEntity(gridCoords.row, gridCoords.col, entityId);
                     this.hud.startCooldown(this.selectedPlant); 
-                    this.selectedPlant = null; // Сбрасываем выбор после успешной посадки
-                    this._destroyGhostPlant();
+                    this.selectedPlant = null;
+                    this._destroySelectionVisuals(); // <-- ИСПОЛЬЗУЕМ ОБНОВЛЕННЫЙ МЕТОД
                 }
             } else {
                 Debug.log(`Not enough sun to plant ${this.selectedPlant}.`);
-                this.selectedPlant = null; // Сбрасываем, если денег не хватило
-                this._destroyGhostPlant();
+                this.selectedPlant = null;
+                this._destroySelectionVisuals(); // <-- ИСПОЛЬЗУЕМ ОБНОВЛЕННЫЙ МЕТОД
             }
-            return true; // Клик был по сетке, он обработан
+            return true;
         }
         
-        // Если кликнули мимо сетки, сбрасываем выбор растения
         this.selectedPlant = null;
-        this._destroyGhostPlant();
+        this._destroySelectionVisuals(); // <-- ИСПОЛЬЗУЕМ ОБНОВЛЕННЫЙ МЕТОД
         Debug.log('Clicked outside grid, selection cleared.');
         return true;
     }
-    _createGhostPlant(plantName) {
-        this._destroyGhostPlant(); // На всякий случай удаляем старого
-        
-        this.ghostPlantId = this.factory.create(plantName, { x: -100, y: -100 }); // Создаем за экраном
+
+    _createSelectionVisuals(plantName) {
+        this._destroySelectionVisuals(); // Уничтожаем старые визуалы
+
+        // 1. Создаем "призрака" для сетки (как и раньше)
+        this.ghostPlantId = this.factory.create(plantName, { x: -200, y: -200 });
         if (this.ghostPlantId !== null) {
             this.world.addComponent(this.ghostPlantId, new GhostPlantComponent());
-            // Удаляем ненужные для призрака компоненты
+            // Убираем лишние компоненты
             this.world.removeComponent(this.ghostPlantId, 'HealthComponent');
             this.world.removeComponent(this.ghostPlantId, 'PlantComponent');
             this.world.removeComponent(this.ghostPlantId, 'HitboxComponent');
@@ -134,12 +135,44 @@ export default class PlayerInputSystem{
             this.world.removeComponent(this.ghostPlantId, 'ShootsProjectilesComponent');
             this.world.removeComponent(this.ghostPlantId, 'GridLocationComponent');
         }
+
+        // 2. Создаем "растение-курсор"
+        this.cursorPlantId = this.factory.create(plantName, { x: -200, y: -200 });
+        if (this.cursorPlantId !== null) {
+            // Добавляем наш новый компонент-маркер
+            this.world.addComponent(this.cursorPlantId, new CursorAttachmentComponent());
+            
+            // Уменьшаем его размер для лучшего вида
+            const pos = this.world.getComponent(this.cursorPlantId, 'PositionComponent');
+            if (pos) {
+                pos.width *= 0.8;
+                pos.height *= 0.8;
+            }
+            
+            // Ставим его поверх всего, включая UI
+            const renderable = this.world.getComponent(this.cursorPlantId, 'RenderableComponent');
+            if (renderable) {
+                renderable.layer = 100;
+            }
+             // Убираем лишние компоненты так же, как и у призрака
+            this.world.removeComponent(this.cursorPlantId, 'HealthComponent');
+            this.world.removeComponent(this.cursorPlantId, 'PlantComponent');
+            this.world.removeComponent(this.cursorPlantId, 'HitboxComponent');
+            this.world.removeComponent(this.cursorPlantId, 'SunProducerComponent');
+            this.world.removeComponent(this.cursorPlantId, 'ShootsProjectilesComponent');
+            this.world.removeComponent(this.cursorPlantId, 'GridLocationComponent');
+        }
     }
 
-    _destroyGhostPlant() {
+    _destroySelectionVisuals() {
         if (this.ghostPlantId !== null) {
             this.world.addComponent(this.ghostPlantId, new RemovalComponent());
             this.ghostPlantId = null;
         }
+        if (this.cursorPlantId !== null) {
+            this.world.addComponent(this.cursorPlantId, new RemovalComponent());
+            this.cursorPlantId = null;
+        }
     }
+    
 }

@@ -54,6 +54,7 @@ export default class Game{
             this.assetLoader.loadImage('pea', 'assets/images/pea.png'),
             this.assetLoader.loadImage('sunflower', 'assets/images/sunflower.png'),
             this.assetLoader.loadImage('lawnmower', 'assets/images/lawnmower.png'),
+            
 
             this.assetLoader.loadImage('ui_progress_bar', 'assets/images/progress_bar.png'),
             this.assetLoader.loadImage('ui_progress_flag', 'assets/images/progress_flag.png'),

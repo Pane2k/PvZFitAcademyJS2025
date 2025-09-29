@@ -4,6 +4,7 @@ export default class AssetLoader{
     constructor(){
         this.images = new Map()
         this.jsonFiles = new Map()
+        
     }
     async loadJSON(key, path){
         try{

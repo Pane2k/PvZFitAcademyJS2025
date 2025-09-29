@@ -1,0 +1,13 @@
+
+zombie.png
+size: 1142,667
+format: RGBA8888
+filter: Linear,Linear
+repeat: none
+Zombie_spine
+  rotate: false
+  xy: 2, 2
+  size: 1138, 663
+  orig: 1138, 663
+  offset: 0, 0
+  index: -1

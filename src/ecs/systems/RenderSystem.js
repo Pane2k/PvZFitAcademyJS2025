@@ -1,4 +1,5 @@
 import Debug from "../../core/Debug.js"
+import HiddenComponent from "../components/HiddenComponent.js"
 export default class RenderSystem{
     constructor(renderer){
         this.renderer = renderer
@@ -7,14 +8,27 @@ export default class RenderSystem{
         this.offscreenCanvas = document.createElement('canvas');
         this.offscreenCtx = this.offscreenCanvas.getContext('2d');
     }
-    update(){
-        const entitiesToRender = this.world.getEntitiesWithComponents('PositionComponent', 'SpriteComponent', 'RenderableComponent')
+    update(minLayer = -Infinity, maxLayer = Infinity){
+        let entitiesToRender = this.world.getEntitiesWithComponents('PositionComponent', 'SpriteComponent', 'RenderableComponent');
+
+        // <-- НОВОЕ: Фильтруем сущности по заданному диапазону слоев -->
+        entitiesToRender = entitiesToRender.filter(entityID => {
+            const renderable = this.world.getComponent(entityID, 'RenderableComponent');
+            const layer = renderable ? renderable.layer : 0;
+            return layer >= minLayer && layer <= maxLayer;
+        });
+
+        // Сортировка остается такой же, она отсортирует отфильтрованный список
         entitiesToRender.sort((a, b) => {
             const layerA = this.world.getComponent(a, 'RenderableComponent').layer;
             const layerB = this.world.getComponent(b, 'RenderableComponent').layer;
             return layerA - layerB;
         });
         for(const entityID of entitiesToRender){
+            const isHidden = this.world.getComponent(entityID, 'HiddenComponent');
+            if (isHidden) {
+                continue; // Пропускаем отрисовку этой сущности
+            }
             const pos = this.world.getComponent(entityID, 'PositionComponent')
             const sprite = this.world.getComponent(entityID, 'SpriteComponent')
             const tint = this.world.getComponent(entityID, 'TintEffectComponent')
@@ -24,8 +38,9 @@ export default class RenderSystem{
                 const ctx = this.renderer.ctx;
                 ctx.save();
                 if (ghost) {
-                    ctx.globalAlpha = 0.6;
+                    ctx.globalAlpha = ghost.alpha;
                 }
+                
 
                 if (tint) {
                     const currentColor = tint.getCurrentColor(); 

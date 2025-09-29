@@ -29,7 +29,7 @@
         "components": {
             "PositionComponent": { "height": 65 }, 
             "SpriteComponent": { "assetKey": "sun" },
-            "RenderableComponent": { "layer": 3 },
+            "RenderableComponent": { "layer": 4 },
             "VelocityComponent": { "vx": 0, "vy": 40 },
             "CollectibleComponent": {},
             "GridLocationComponent": {},
