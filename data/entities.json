@@ -39,13 +39,20 @@
     "zombie_basic": {
         "spawnCost": 1,
         "components": {
-            "PositionComponent": { "height": 90 },
-            "SpriteComponent": { "assetKey": "zombie_basic" },
+            "PositionComponent": { "height": 180 },
+            "DragonBonesComponent": {
+                "skeKey": "dragon_ske",
+                "texKey": "dragon_tex",
+                "imgKey": "dragon_img",
+                "initialAnimation": "walk",
+                "scale": 0.15,
+                "anchorOffsetY": -85
+            },
             "RenderableComponent": { "layer": 2 },
             "HealthComponent": { "maxHealth": 100 },
             "MeleeAttackComponent": { "damage": 50, "attackRate": 1.5 },
             "VelocityComponent": { "baseSpeed": -20, "speedVariance": 5 },
-            "HitboxComponent": { "offsetX": 25, "offsetY": 5, "width": 30, "height": 90 },
+            "HitboxComponent": { "offsetX": 65, "offsetY": 30, "width": 60, "height": 150 },
             "ZombieComponent": {}
         }
     },

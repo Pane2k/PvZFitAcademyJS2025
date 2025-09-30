@@ -1,3 +1,5 @@
+// src/game/Factory.js
+
 import PositionComponent from "../ecs/components/PositionComponent.js";
 import SpriteComponent from "../ecs/components/SpriteComponent.js";
 import RenderableComponent from "../ecs/components/RenderableComponent.js";
@@ -24,6 +26,7 @@ import TintEffectComponent from "../ecs/components/TintEffectComponent.js"
 import GhostPlantComponent from "../ecs/components/GhostPlantComponent.js"
 import HiddenComponent from "../ecs/components/HiddenComponent.js"
 import CursorAttachmentComponent from "../ecs/components/CursorAttachmentComponent.js"
+import DragonBonesComponent from "../ecs/components/DragonBonesComponent.js";
 
 const componentMap = {
     PositionComponent, 
@@ -50,16 +53,17 @@ const componentMap = {
     TintEffectComponent,
     GhostPlantComponent,
     HiddenComponent,
-    CursorAttachmentComponent 
-
+    CursorAttachmentComponent,
+    DragonBonesComponent
 }
 
 export default class Factory{
-    constructor(world, assetLoader, entityPrototypes, grid){
+    constructor(world, assetLoader, entityPrototypes, grid, canvas){
         this.world = world
         this.assetLoader = assetLoader
         this.prototypes = entityPrototypes
         this.grid = grid
+        this.canvas = canvas;
     }
 
     create(name, initialData){
@@ -70,14 +74,8 @@ export default class Factory{
         }
         const entityID = this.world.createEntity()
         this.world.addComponent(entityID, new PrefabComponent(name))
-        const spriteProto = proto.components.SpriteComponent;
-        const sprite = this.assetLoader.getImage(spriteProto.assetKey);
-        if (sprite) {
-            this.world.addComponent(entityID, new SpriteComponent(sprite));
-        }
-
+        
         for (const compName in proto.components){
-            if(compName === 'SpriteComponent') continue
             const CompClass = componentMap[compName]
             if (!CompClass){
                 Debug.warn(`Unknown component type: ${compName}`)
@@ -86,29 +84,62 @@ export default class Factory{
             const protoData = proto.components[compName]
             let component
 
-            if(compName === 'PositionComponent'){
+            if (compName === 'DragonBonesComponent') {
+                const skeData = this.assetLoader.getJSON(protoData.skeKey);
+                const texData = this.assetLoader.getJSON(protoData.texKey);
+                const imgData = this.assetLoader.getImage(protoData.imgKey);
+
+                if (skeData && texData && imgData) {
+                    // VVV ПЕРЕДАЕМ НОВЫЙ ПАРАМЕТР anchorOffsetY VVV
+                    component = new CompClass(
+                        this.canvas, 
+                        skeData, 
+                        texData, 
+                        imgData, 
+                        protoData.initialAnimation, 
+                        protoData.scale, 
+                        protoData.anchorOffsetY // <-- ИЗВЛЕКАЕМ ИЗ JSON
+                    );
+                } else {
+                    Debug.error(`Assets for DragonBonesComponent '${name}' not found!`);
+                    continue;
+                }
+            }
+            else if (compName === 'SpriteComponent') {
+                const sprite = this.assetLoader.getImage(protoData.assetKey);
+                if (sprite) {
+                    component = new SpriteComponent(sprite);
+                }
+            }
+            else if (compName === 'PositionComponent') {
                 let width = 0;
                 let height = 0;
+                const spriteProto = proto.components.SpriteComponent;
+                const dbProto = proto.components.DragonBonesComponent;
 
-                if (sprite && sprite.width > 0) {
-                    const aspectRatio = sprite.width / sprite.height;
-                    if (protoData.height) { // Если в JSON задана высота
-                        height = protoData.height;
-                        width = height * aspectRatio;
-                    } else if (protoData.width) { // Если в JSON задана ширина
-                        width = protoData.width;
-                        height = width / aspectRatio;
+                if (spriteProto) {
+                    const sprite = this.assetLoader.getImage(spriteProto.assetKey);
+                    if (sprite && sprite.width > 0) {
+                        const aspectRatio = sprite.width / sprite.height;
+                        if (protoData.height) {
+                            height = protoData.height;
+                            width = height * aspectRatio;
+                        } else if (protoData.width) {
+                            width = protoData.width;
+                            height = width / aspectRatio;
+                        }
                     }
+                } else if (dbProto) {
+                    height = protoData.height || 100;
+                    width = protoData.width || (height * 0.75);
                 }
                 component = new CompClass(initialData.x || 0, initialData.y || 0, width, height);
             }
-
             else if (compName === 'GridLocationComponent' ){
                 if(initialData.gridCoords){
                     component = new CompClass(initialData.gridCoords.row, initialData.gridCoords.col)
                 }
             }
-            
             else if (compName === 'VelocityComponent') {
                 let vx = protoData.vx || 0;
                 let vy = protoData.vy || 0;

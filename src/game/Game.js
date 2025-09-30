@@ -56,6 +56,10 @@ export default class Game{
             this.assetLoader.loadImage('lawnmower', 'assets/images/lawnmower.png'),
             
 
+            this.assetLoader.loadJSON('dragon_ske', 'assets/animations/asa/Dragon_ske.json'),
+            this.assetLoader.loadJSON('dragon_tex', 'assets/animations/asa/Dragon_tex.json'),
+            this.assetLoader.loadImage('dragon_img', 'assets/animations/asa/Dragon_tex.png'),
+
             this.assetLoader.loadImage('ui_progress_bar', 'assets/images/progress_bar.png'),
             this.assetLoader.loadImage('ui_progress_flag', 'assets/images/progress_flag.png'),
             this.assetLoader.loadImage('ui_zombie_head', 'assets/images/zombie_head.png'),

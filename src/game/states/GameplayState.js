@@ -26,6 +26,7 @@ import ArcMovementSystem from "../../ecs/systems/ArcMovementSystem.js"
 import EffectSystem from "../../ecs/systems/EffectSystem.js"
 import MouseFollowingSystem from "../../ecs/systems/MouseFollowingSystem.js"
 import CursorFollowingSystem from "../../ecs/systems/CursorFollowingSystem.js"
+import AnimationSystem from "../../ecs/systems/AnimationSystem.js"
 
 import Grid from "../Grid.js";
 import Factory from "../Factory.js";
@@ -100,7 +101,13 @@ export default class GameplayState extends BaseState{
         
         const entityPrototypes = this.game.assetLoader.getJSON('entities');
         const levelData = this.game.assetLoader.getJSON('levels').level_1;
-        this.game.factory = new Factory(this.game.world, this.game.assetLoader, entityPrototypes, null);
+        this.game.factory = new Factory(
+            this.game.world, 
+            this.game.assetLoader, 
+            entityPrototypes, 
+            null, 
+            this.game.canvas // <-- ПЕРЕДАЕМ ССЫЛКУ НА CANVAS
+        );
         this.game.world.factory = this.game.factory
 
         const availablePlants = ['peashooter', 'sunflower']
@@ -131,6 +138,7 @@ export default class GameplayState extends BaseState{
         this.arcMovementSystem = new ArcMovementSystem()
         this.effectSystem = new EffectSystem()
         this.cursorFollowingSystem = new CursorFollowingSystem()
+        this.animationSystem = new AnimationSystem();
 
         this.setupGrid();
         this.gameOverSystem = new GameOverSystem(this.grid.offsetX - 30)
@@ -157,7 +165,8 @@ export default class GameplayState extends BaseState{
         this.game.world.addSystem(this.effectSystem)
         this.game.world.addSystem(this.mouseFollowingSystem)
         this.game.world.addSystem(this.cursorFollowingSystem);
-
+        this.game.world.addSystem(this.animationSystem)
+        
         this.createLawnmowers()
         this.game.world.grid = this.grid;
         this.background = new Background(
