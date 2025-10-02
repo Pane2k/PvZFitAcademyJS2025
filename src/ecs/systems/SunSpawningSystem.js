@@ -67,13 +67,13 @@ export default class SunSpawningSystem {
 
             const targetY = this.grid.getWorldPos(gridLoc.row, gridLoc.col).y;
 
-            const sunCenterY = pos.y + pos.height / 2;
+            const sunCenterY = pos.y 
 
             // Если центр солнца достиг или пересек центр целевой ячейки
             if (sunCenterY >= targetY) {
                 this.world.removeComponent(entityID, 'VelocityComponent');
                 this.world.addComponent(entityID, new LifetimeComponent(10));
-                pos.y = targetY - pos.height / 2;
+                pos.y = targetY 
                 Debug.log(`Sun (entity ${entityID}) landed at [${gridLoc.row}, ${gridLoc.col}]. VelocityComponent removed.`);
             }
         }
