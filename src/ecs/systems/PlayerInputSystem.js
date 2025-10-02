@@ -24,9 +24,7 @@ export default class PlayerInputSystem{
 
     handleClick(position) {
         if (!this.factory || !this.grid || !this.hud) return;
-
-        // Обрабатываем клик поочередно. Если какая-то часть UI
-        // его "поглотила", прекращаем дальнейшую обработку.
+        
         if (this._handleClickOnUI(position)) return;
         if (this._handleClickOnCollectible(position)) return;
         if (this._handleClickOnGrid(position)) return;
@@ -39,16 +37,16 @@ export default class PlayerInputSystem{
             if (this.hud.sunCount >= plantData.cost) {
                 if (this.selectedPlant === clickedCardName) {
                     this.selectedPlant = null;
-                    this._destroySelectionVisuals(); // <-- ИСПОЛЬЗУЕМ ОБНОВЛЕННЫЙ МЕТОД
+                    this._destroySelectionVisuals();
                 } else {
                     this.selectedPlant = clickedCardName;
-                    this._createSelectionVisuals(clickedCardName); // <-- ИСПОЛЬЗУЕМ ОБНОВЛЕННЫЙ МЕТОД
+                    this._createSelectionVisuals(clickedCardName);
                 }
                 Debug.log(`Selected plant is now: ${this.selectedPlant}`);
             } else {
                 Debug.log(`Not enough sun for ${clickedCardName}.`);
                 this.selectedPlant = null;
-                this._destroySelectionVisuals(); // <-- ИСПОЛЬЗУЕМ ОБНОВЛЕННЫЙ МЕТОД
+                this._destroySelectionVisuals();
             }
             return true;
         }
@@ -59,8 +57,12 @@ export default class PlayerInputSystem{
         const collectibles = this.world.getEntitiesWithComponents('CollectibleComponent', 'PositionComponent');
         for (const entityID of collectibles) {
             const pos = this.world.getComponent(entityID, 'PositionComponent');
-            if (position.x >= pos.x && position.x <= pos.x + pos.width &&
-                position.y >= pos.y && position.y <= pos.y + pos.height) {
+            
+            // NOTE: Проверяем клик относительно центра объекта
+            const halfW = pos.width / 2;
+            const halfH = pos.height / 2;
+            if (position.x >= pos.x - halfW && position.x <= pos.x + halfW &&
+                position.y >= pos.y - halfH && position.y <= pos.y + halfH) {
                 
                 Debug.log(`Collected resource (entity ${entityID})! Starting animation.`);
                 
@@ -98,36 +100,33 @@ export default class PlayerInputSystem{
 
             if (this.hud.sunCount >= plantCost) {
                 eventBus.publish('sun:spent', { value: plantCost });
-
                 const entityId = this.factory.create(this.selectedPlant, { gridCoords: gridCoords });
                 if (entityId !== null) {
                     this.grid.placeEntity(gridCoords.row, gridCoords.col, entityId);
                     this.hud.startCooldown(this.selectedPlant); 
                     this.selectedPlant = null;
-                    this._destroySelectionVisuals(); // <-- ИСПОЛЬЗУЕМ ОБНОВЛЕННЫЙ МЕТОД
+                    this._destroySelectionVisuals();
                 }
             } else {
                 Debug.log(`Not enough sun to plant ${this.selectedPlant}.`);
                 this.selectedPlant = null;
-                this._destroySelectionVisuals(); // <-- ИСПОЛЬЗУЕМ ОБНОВЛЕННЫЙ МЕТОД
+                this._destroySelectionVisuals();
             }
             return true;
         }
         
         this.selectedPlant = null;
-        this._destroySelectionVisuals(); // <-- ИСПОЛЬЗУЕМ ОБНОВЛЕННЫЙ МЕТОД
+        this._destroySelectionVisuals();
         Debug.log('Clicked outside grid, selection cleared.');
         return true;
     }
 
     _createSelectionVisuals(plantName) {
-        this._destroySelectionVisuals(); // Уничтожаем старые визуалы
+        this._destroySelectionVisuals();
 
-        // 1. Создаем "призрака" для сетки (как и раньше)
         this.ghostPlantId = this.factory.create(plantName, { x: -200, y: -200 });
         if (this.ghostPlantId !== null) {
             this.world.addComponent(this.ghostPlantId, new GhostPlantComponent());
-            // Убираем лишние компоненты
             this.world.removeComponent(this.ghostPlantId, 'HealthComponent');
             this.world.removeComponent(this.ghostPlantId, 'PlantComponent');
             this.world.removeComponent(this.ghostPlantId, 'HitboxComponent');
@@ -136,25 +135,20 @@ export default class PlayerInputSystem{
             this.world.removeComponent(this.ghostPlantId, 'GridLocationComponent');
         }
 
-        // 2. Создаем "растение-курсор"
         this.cursorPlantId = this.factory.create(plantName, { x: -200, y: -200 });
         if (this.cursorPlantId !== null) {
-            // Добавляем наш новый компонент-маркер
             this.world.addComponent(this.cursorPlantId, new CursorAttachmentComponent());
             
-            // Уменьшаем его размер для лучшего вида
             const pos = this.world.getComponent(this.cursorPlantId, 'PositionComponent');
             if (pos) {
                 pos.width *= 0.8;
                 pos.height *= 0.8;
             }
             
-            // Ставим его поверх всего, включая UI
             const renderable = this.world.getComponent(this.cursorPlantId, 'RenderableComponent');
             if (renderable) {
                 renderable.layer = 100;
             }
-             // Убираем лишние компоненты так же, как и у призрака
             this.world.removeComponent(this.cursorPlantId, 'HealthComponent');
             this.world.removeComponent(this.cursorPlantId, 'PlantComponent');
             this.world.removeComponent(this.cursorPlantId, 'HitboxComponent');
@@ -174,5 +168,4 @@ export default class PlayerInputSystem{
             this.cursorPlantId = null;
         }
     }
-    
 }

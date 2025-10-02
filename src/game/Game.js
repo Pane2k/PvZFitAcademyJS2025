@@ -1,3 +1,5 @@
+// src/game/Game.js
+
 import GameLoop from '../core/GameLoop.js'
 import Renderer from '../core/Renderer.js'
 import AssetLoader from '../core/AssetLoader.js'
@@ -20,8 +22,8 @@ import eventBus from '../core/EventBus.js'
 
 export default class Game{
     constructor(){
-        const VIRTUAL_WIDTH = 1280; // Ширина нашего игрового мира
-        const VIRTUAL_HEIGHT = 720; // Высота
+        const VIRTUAL_WIDTH = 1280;
+        const VIRTUAL_HEIGHT = 720;
         this.canvas = document.getElementById('game-canvas')
         this.renderer = new Renderer(this.canvas, VIRTUAL_WIDTH, VIRTUAL_HEIGHT)
         this.assetLoader = new AssetLoader()
@@ -50,15 +52,15 @@ export default class Game{
         await Promise.all([
             this.assetLoader.loadImage('peashooter', 'assets/images/peashooter.png'),
             this.assetLoader.loadImage('sun', 'assets/images/sun.png'),
-            this.assetLoader.loadImage('zombie_basic', 'assets/images/zombie.png'), 
             this.assetLoader.loadImage('pea', 'assets/images/pea.png'),
             this.assetLoader.loadImage('sunflower', 'assets/images/sunflower.png'),
             this.assetLoader.loadImage('lawnmower', 'assets/images/lawnmower.png'),
             
-
-            this.assetLoader.loadJSON('dragon_ske', 'assets/animations/asa/Dragon_ske.json'),
-            this.assetLoader.loadJSON('dragon_tex', 'assets/animations/asa/Dragon_tex.json'),
-            this.assetLoader.loadImage('dragon_img', 'assets/animations/asa/Dragon_tex.png'),
+            // --- VVV ИЗМЕНЕНИЯ ЗДЕСЬ VVV ---
+            this.assetLoader.loadJSON('zombie_ske', 'assets/animations/zombie/zombie_ske.json'),
+            this.assetLoader.loadJSON('zombie_tex', 'assets/animations/zombie/zombie_tex.json'),
+            this.assetLoader.loadImage('zombie_img', 'assets/animations/zombie/zombie_tex.png'),
+            // --- ^^^ КОНЕЦ ИЗМЕНЕНИЙ ^^^ ---
 
             this.assetLoader.loadImage('ui_progress_bar', 'assets/images/progress_bar.png'),
             this.assetLoader.loadImage('ui_progress_flag', 'assets/images/progress_flag.png'),
@@ -87,9 +89,5 @@ export default class Game{
     }
     render(){
         this.stateManager.render()
-        // this.renderer.clear('#2c3e50')
-        // if(this.renderSystem){
-        //     this.renderSystem.update()
-        // }
     }
 }

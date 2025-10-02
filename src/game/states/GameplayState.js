@@ -166,7 +166,7 @@ export default class GameplayState extends BaseState{
         this.game.world.addSystem(this.mouseFollowingSystem)
         this.game.world.addSystem(this.cursorFollowingSystem);
         this.game.world.addSystem(this.animationSystem)
-        
+
         this.createLawnmowers()
         this.game.world.grid = this.grid;
         this.background = new Background(
@@ -190,15 +190,16 @@ export default class GameplayState extends BaseState{
         this.debugOverlay.update(deltaTime, this.game.world);
         
     }
-    createLawnmowers() {
+     createLawnmowers() {
         if (!this.grid || !this.game.factory) return;
 
         for (let row = 0; row < this.grid.rows; row++) {
-            const worldPos = this.grid.getWorldPos(row, 0); // Позиция в первом столбце
-            const lawnmowerSize = 70; // Примерный размер
+            const worldPos = this.grid.getWorldPos(row, 0); // Позиция центра ячейки
+            const lawnmowerSize = 70;
             
-            const x = this.grid.offsetX - lawnmowerSize + 15; // Слева от сетки
-            const y = worldPos.y - lawnmowerSize / 2; // Центрируем по Y
+            // NOTE: Рассчитываем центральную точку для косилки
+            const x = this.grid.offsetX - lawnmowerSize / 2 + 15;
+            const y = worldPos.y; // Y уже является центром
 
             this.game.factory.create('lawnmower', { x, y });
         }

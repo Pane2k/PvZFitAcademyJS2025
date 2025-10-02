@@ -9,7 +9,7 @@ export default class WaveSystem {
         this.factory = factory;
 
         this.currentWaveIndex = -1;
-        this.waveTimer = 10; // Задержка перед первой волной
+        this.waveTimer = 0; // Задержка перед первой волной
         this.zombiePool = [];
         this.activeZombies = new Set();
 
@@ -124,7 +124,7 @@ export default class WaveSystem {
             const row = shuffledRows[rowIndex % shuffledRows.length];
             
             // Позиция спавна за правым краем экрана
-            const spawnX = grid.offsetX + grid.width - 50 + (Math.random() * 10);
+            const spawnX = grid.offsetX + grid.width - 50 + (Math.random() * 10) + 100;
             const spawnY = grid.getWorldPos(row, 0).y; // Y-координата центра ряда
 
             const entityId = this.factory.create(name, { x: spawnX, y: spawnY });

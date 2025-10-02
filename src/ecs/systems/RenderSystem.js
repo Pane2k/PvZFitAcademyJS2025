@@ -35,7 +35,8 @@ export default class RenderSystem{
                 return layerA - layerB;
             }
             
-            return (posA.y + posA.height) - (posB.y + posB.height);
+            // NOTE: Сортировка по Y-координате центра + половина высоты для корректного Z-индекса
+            return (posA.y + posA.height / 2) - (posB.y + posB.height / 2);
         });
 
         for(const entityID of entitiesToRender){
@@ -45,6 +46,10 @@ export default class RenderSystem{
             const pos = this.world.getComponent(entityID, 'PositionComponent');
             const spriteComp = this.world.getComponent(entityID, 'SpriteComponent');
             const dbComp = this.world.getComponent(entityID, 'DragonBonesComponent');
+
+            // NOTE: Теперь (x, y) это центр. Вычисляем top-left для отрисовки.
+            const drawX = pos.x - pos.width / 2;
+            const drawY = pos.y - pos.height / 2;
 
             if (spriteComp && spriteComp.image) {
                 const tint = this.world.getComponent(entityID, 'TintEffectComponent');
@@ -56,32 +61,22 @@ export default class RenderSystem{
                 
                 if (tint) {
                     const currentColor = tint.getCurrentColor(); 
-                    this.drawTintedImage(spriteComp.image, pos.x, pos.y, pos.width, pos.height, currentColor);
+                    this.drawTintedImage(spriteComp.image, drawX, drawY, pos.width, pos.height, currentColor);
                 } else {
-                    this.renderer.drawImage(spriteComp.image, pos.x, pos.y, pos.width, pos.height);
+                    this.renderer.drawImage(spriteComp.image, drawX, drawY, pos.width, pos.height);
                 }
                 ctx.restore();
             } 
             else if (dbComp && dbComp.renderer) {
                 const dbRenderer = dbComp.renderer;
                 const mainRenderer = this.renderer;
-                const hitbox = this.world.getComponent(entityID, 'HitboxComponent');
-
-                let virtualAnchorX, virtualAnchorY;
-
-                if (hitbox) {
-                    virtualAnchorX = pos.x + hitbox.offsetX + hitbox.width / 2;
-                    // --- VVV КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ VVV ---
-                    // Применяем смещение из компонента к опорной точке Y
-                    virtualAnchorY = pos.y + hitbox.offsetY + hitbox.height + (dbComp.anchorOffsetY || 0);
-                } else {
-                    virtualAnchorX = pos.x + pos.width / 2;
-                    virtualAnchorY = pos.y + pos.height + (dbComp.anchorOffsetY || 0);
-                }
+                dbRenderer.debugDraw = Debug.showSkeletons;
+                // NOTE: Опорная точка анимации теперь рассчитывается от центра (pos.y)
+                const virtualAnchorX = pos.x;
+                const virtualAnchorY = pos.y + (dbComp.anchorOffsetY || 0);
 
                 const physicalX = virtualAnchorX * mainRenderer.scale + mainRenderer.offsetX;
                 const physicalY = virtualAnchorY * mainRenderer.scale + mainRenderer.offsetY;
-
                 const finalScale = dbComp.scale * mainRenderer.scale;
                 
                 dbRenderer.globalTransform.x = physicalX;
@@ -94,11 +89,17 @@ export default class RenderSystem{
 
             const hitbox = this.world.getComponent(entityID, 'HitboxComponent');
             if (hitbox) {
+                // NOTE: Отрисовка хитбокса от его центра
+                const hitboxCenterX = pos.x + hitbox.offsetX;
+                const hitboxCenterY = pos.y + hitbox.offsetY;
+                const hitboxDrawX = hitboxCenterX - hitbox.width / 2;
+                const hitboxDrawY = hitboxCenterY - hitbox.height / 2;
+                
                 if (Debug.showHitboxes) {
-                    this.renderer.drawRect(pos.x + hitbox.offsetX, pos.y + hitbox.offsetY, hitbox.width, hitbox.height, 'rgba(255, 0, 0, 0.5)', 2);
+                    this.renderer.drawRect(hitboxDrawX, hitboxDrawY, hitbox.width, hitbox.height, 'rgba(255, 0, 0, 0.5)', 2);
                 }
                 if (Debug.showInteractables && this.world.getComponent(entityID, 'CollectibleComponent')) {
-                    this.renderer.drawRect(pos.x + hitbox.offsetX, pos.y + hitbox.offsetY, hitbox.width, hitbox.height, 'rgba(0, 150, 255, 0.5)', 2);
+                    this.renderer.drawRect(hitboxDrawX, hitboxDrawY, hitbox.width, hitbox.height, 'rgba(0, 150, 255, 0.5)', 2);
                 }
             }
             
@@ -107,8 +108,10 @@ export default class RenderSystem{
                 if (health) {
                     const barWidth = pos.width * 0.8;
                     const barHeight = 8;
-                    const barX = pos.x + (pos.width - barWidth) / 2;
-                    const barY = pos.y - barHeight - 5;
+                    // NOTE: Позиция хелсбара относительно top-left
+                    const barX = drawX + (pos.width - barWidth) / 2;
+                    const barY = drawY - barHeight - 5;
+
                     const pBarX = barX * this.renderer.scale + this.renderer.offsetX;
                     const pBarY = barY * this.renderer.scale + this.renderer.offsetY;
                     const pBarWidth = barWidth * this.renderer.scale;
@@ -127,6 +130,7 @@ export default class RenderSystem{
     }
 
     drawTintedImage(image, x, y, width, height, color) {
+        // NOTE: x,y здесь уже top-left
         this.offscreenCanvas.width = image.width;
         this.offscreenCanvas.height = image.height;
         this.offscreenCtx.drawImage(image, 0, 0);

@@ -22,15 +22,12 @@ export default class ShootingSystem {
             for (const zombieId of zombies) {
                 const zombiePos = this.world.getComponent(zombieId, 'PositionComponent');
 
-                // Цель должна быть справа от стрелка
                 if (zombiePos.x > shooterPos.x) {
-                    // Динамически определяем ряд зомби по его Y-координате
-                    const zombieGridCoords = this.world.grid.getCoords(zombiePos.x, zombiePos.y + zombiePos.height / 2);
+                    const zombieGridCoords = this.world.grid.getCoords(zombiePos.x, zombiePos.y);
                     
-                    // Если зомби на той же линии, что и стрелок
                     if (zombieGridCoords && zombieGridCoords.row === shooterGridLoc.row) {
                         hasTargetOnLane = true;
-                        break; // Нашли хотя бы одну цель, дальше проверять не нужно
+                        break;
                     }
                 }
             }
@@ -50,9 +47,9 @@ export default class ShootingSystem {
         const pos = this.world.getComponent(shooterId, 'PositionComponent');
         if (!pos) return;
 
-        // Точка спавна снаряда (например, "рот" горохострела)
-        const spawnX = pos.x + pos.width * 0.8;
-        const spawnY = pos.y + pos.height * 0.2;
+        // NOTE: Точка спавна снаряда относительно центра
+        const spawnX = pos.x + pos.width * 0.3; 
+        const spawnY = pos.y - pos.height * 0.3;
 
         const projectileId = this.factory.create(shooterComponent.projectileName, { x: spawnX, y: spawnY });
         

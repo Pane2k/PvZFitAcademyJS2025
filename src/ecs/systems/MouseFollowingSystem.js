@@ -1,3 +1,5 @@
+// src/ecs/systems/MouseFollowingSystem.js
+
 import eventBus from "../../core/EventBus.js";
 import Debug from "../../core/Debug.js";
 import GridLocationComponent from "../components/GridLocationComponent.js";
@@ -26,24 +28,22 @@ export default class MouseFollowingSystem {
         
         let isCellAvailable = false;
         if (gridCoords) {
-            // Ячейка доступна, если она НЕ занята
             isCellAvailable = !this.grid.isCellOccupied(gridCoords.row, gridCoords.col);
 
-            // Центрируем призрака в ячейке
+            // --- VVV КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ VVV ---
+            // Получаем центральные координаты ячейки
             const cellCenter = this.grid.getWorldPos(gridCoords.row, gridCoords.col);
-            pos.x = cellCenter.x - pos.width / 2;
-            pos.y = cellCenter.y - pos.height / 2;
+            // Напрямую присваиваем их центральным координатам "призрака"
+            pos.x = cellCenter.x;
+            pos.y = cellCenter.y;
+            // --- ^^^ КОНЕЦ ИСПРАВЛЕНИЯ ^^^ ---
         }
 
-        // --- НОВАЯ ЛОГИКА: УПРАВЛЕНИЕ ВИДИМОСТЬЮ ---
         if (isCellAvailable) {
-            // Если ячейка доступна, убеждаемся, что призрак видим
             this.world.removeComponent(ghostId, 'HiddenComponent');
         } else {
-            // Если ячейка занята или курсор вне сетки, скрываем призрака
             this.world.addComponent(ghostId, new HiddenComponent());
         }
-        // --- КОНЕЦ НОВОЙ ЛОГИКИ ---
 
         // Анимация пульсации (без изменений)
         ghost.pulseTimer += deltaTime * 5;
@@ -51,6 +51,7 @@ export default class MouseFollowingSystem {
         const pulseRange = 0.2;
         ghost.alpha = baseAlpha + Math.sin(ghost.pulseTimer) * pulseRange;
     }
+    
     updateGrid(newGrid) {
         this.grid = newGrid;
     }

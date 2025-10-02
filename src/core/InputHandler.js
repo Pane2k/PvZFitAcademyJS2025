@@ -51,6 +51,10 @@ export default class InputHandler{
                 Debug.showHealthBars = !Debug.showHealthBars;
                 Debug.log(`Debug Show Health Bars: ${Debug.showHealthBars}`);
             }
+            if (key === 'l') { // 'L' как в skeLeton
+                Debug.showSkeletons = !Debug.showSkeletons;
+                Debug.log(`Debug Show Skeletons: ${Debug.showSkeletons}`);
+            }
             if (key === 'n') {
                 eventBus.publish('time:toggle_speed');
             }

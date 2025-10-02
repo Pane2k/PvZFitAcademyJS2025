@@ -1,8 +1,9 @@
 export default class Debug{
     static isEnabled = true
-    static showHitboxes = false
+    static showHitboxes = true
     static showInteractables = false
-    static showHealthBars = false
+    static showHealthBars = true
+    static showSkeletons = false
     
     static enable(){
         this.isEnabled = true

@@ -9,7 +9,7 @@
             "GridLocationComponent": {},
             "HealthComponent": { "maxHealth": 200 },
             "PlantComponent": {},
-            "HitboxComponent": { "offsetX": 40, "offsetY": 5, "width": 22, "height": 62 },
+            "HitboxComponent": { "offsetX": 19, "offsetY": 1, "width": 22, "height": 62 },
             "ShootsProjectilesComponent": { "projectileName": "pea", "fireRate": 2, "projectileSpeed": 250 }
         }
     },
@@ -20,7 +20,7 @@
             "RenderableComponent": { "layer": 3 },
             "VelocityComponent": {},
             "ProjectileComponent": { "damage": 25 },
-            "HitboxComponent": { "offsetX": 12.5, "offsetY": 12.5, "width": 25, "height": 25 },
+            "HitboxComponent": { "offsetX": 0, "offsetY": 0, "width": 25, "height": 25 },
             "OutOfBoundsRemovalComponent": {}
         }
     },
@@ -39,20 +39,20 @@
     "zombie_basic": {
         "spawnCost": 1,
         "components": {
-            "PositionComponent": { "height": 180 },
+            "PositionComponent": { "height": 60 },
             "DragonBonesComponent": {
-                "skeKey": "dragon_ske",
-                "texKey": "dragon_tex",
-                "imgKey": "dragon_img",
+                "skeKey": "zombie_ske",
+                "texKey": "zombie_tex",
+                "imgKey": "zombie_img",
                 "initialAnimation": "walk",
-                "scale": 0.15,
-                "anchorOffsetY": -85
+                "scale": 0.8,
+                "anchorOffsetY": 40
             },
             "RenderableComponent": { "layer": 2 },
             "HealthComponent": { "maxHealth": 100 },
             "MeleeAttackComponent": { "damage": 50, "attackRate": 1.5 },
             "VelocityComponent": { "baseSpeed": -20, "speedVariance": 5 },
-            "HitboxComponent": { "offsetX": 65, "offsetY": 30, "width": 60, "height": 150 },
+            "HitboxComponent": { "offsetX": 0, "offsetY": 30, "width": 60, "height": 60 },
             "ZombieComponent": {}
         }
     },
@@ -75,7 +75,7 @@
             "GridLocationComponent": {},
             "HealthComponent": { "maxHealth": 200 },
             "PlantComponent": {},
-            "HitboxComponent": { "offsetX": 15, "offsetY": 5, "width": 40, "height": 65 },
+            "HitboxComponent": { "offsetX": 0, "offsetY": 3, "width": 40, "height": 65 },
             "SunProducerComponent": { "productionRate": 5 }
         }
     }
