@@ -4,22 +4,48 @@ export default class AnimationSystem {
     }
 
     update(deltaTime) {
-        const entities = this.world.getEntitiesWithComponents('DragonBonesComponent');
+        const entities = this.world.getEntitiesWithComponents('DragonBonesComponent', 'PrefabComponent');
 
         for (const entityId of entities) {
-            const dbComponent = this.world.getComponent(entityId, 'DragonBonesComponent');
+            const dbComp = this.world.getComponent(entityId, 'DragonBonesComponent');
+            const prefab = this.world.getComponent(entityId, 'PrefabComponent');
             
-            // Обновляем внутреннее состояние анимации
-            dbComponent.renderer.update(deltaTime);
+            const isDying = this.world.getComponent(entityId, 'DyingComponent');
+            const isAttacking = this.world.getComponent(entityId, 'AttackingComponent');
+            const hasFlag = this.world.getComponent(entityId, 'FlagComponent');
+            
+            let animationName;
+            let loop; // --- VVV ИЗМЕНЕНИЕ: Убираем значение по умолчанию VVV ---
 
-            // Проверяем, есть ли у зомби VelocityComponent
-            const velocity = this.world.getComponent(entityId, 'VelocityComponent');
-            if (velocity) {
-                // Если есть скорость, проигрываем анимацию ходьбы
-                dbComponent.playAnimation('walk');
-            } else {
-                // Если скорости нет (атакует или стоит), проигрываем анимацию ожидания
-                dbComponent.playAnimation('stand');
+            const proto = this.world.factory.prototypes[prefab.name];
+            const flagOverrides = proto?.components?.FlagComponent?.animationOverrides;
+
+            if (isDying) {
+                animationName = 'dying';
+                loop = false; // <-- Четко указываем, что смерть не зациклена
+            } else if (isAttacking) {
+                loop = true; // <-- Атака всегда зациклена
+                if (hasFlag && flagOverrides?.attack) {
+                    animationName = flagOverrides.attack;
+                } else {
+                    animationName = 'attack';
+                }
+            } else { // Is walking or idle
+                loop = true; // <-- Ходьба всегда зациклена
+                if (hasFlag && flagOverrides?.walk) {
+                    animationName = flagOverrides.walk;
+                } else {
+                    animationName = 'walk';
+                }
+            }
+
+            if (dbComp.armature && !dbComp.armature.animations.animations[animationName]) {
+                 if (animationName.includes('attack')) animationName = 'attack';
+                 else if (animationName.includes('walk')) animationName = 'walk';
+            }
+            
+            if (animationName) {
+                dbComp.playAnimation(animationName, loop);
             }
         }
     }

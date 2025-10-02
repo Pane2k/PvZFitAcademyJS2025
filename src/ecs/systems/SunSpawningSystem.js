@@ -43,8 +43,8 @@ export default class SunSpawningSystem {
         // --- КОНЕЦ НОВОЙ ЛОГИКИ ---
 
         // Теперь используем правильные размеры для вычисления стартовой позиции
-        const startX = targetPos.x - actualSunWidth / 2;
-        const startY = this.grid.offsetY - sunTargetHeight; // Используем правильную высоту
+        const startX = targetPos.x 
+        const startY = -sunTargetHeight / 2; // Используем правильную высоту
 
         const entityID = this.factory.create('sun', { x: startX, y: startY });
         if (entityID !== null) {

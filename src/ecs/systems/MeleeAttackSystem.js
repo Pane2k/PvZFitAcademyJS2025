@@ -8,101 +8,98 @@ export default class MeleeAttackSystem {
         this.world = null;
     }
 
-    update(deltaTime) {
-        this.findTargets();
-        this.processAttacks(deltaTime);
-    }
+        
+update(deltaTime) {
+    this.findTargets();
+    this.processAttacks(deltaTime);
+}
 
-    // Находит "свободных" зомби и проверяет, могут ли они атаковать
-    findTargets() {
-        const attackers = this.world.getEntitiesWithComponents('MeleeAttackComponent', 'PositionComponent', 'VelocityComponent');
-        const targets = this.world.getEntitiesWithComponents('PlantComponent', 'PositionComponent', 'HealthComponent');
+findTargets() {
+    // Ищем зомби, которые сейчас движутся (т.е. не атакуют)
+    const attackers = this.world.getEntitiesWithComponents('MeleeAttackComponent', 'PositionComponent', 'VelocityComponent');
+    const targets = this.world.getEntitiesWithComponents('PlantComponent', 'PositionComponent', 'HealthComponent', 'HitboxComponent');
 
-        for (const attackerId of attackers) {
-            const attackerPos = this.world.getComponent(attackerId, 'PositionComponent');
-            const attackerBox = this.world.getComponent(attackerId, 'HitboxComponent');
+    for (const attackerId of attackers) {
+        const attackerPos = this.world.getComponent(attackerId, 'PositionComponent');
+        const attackerBox = this.world.getComponent(attackerId, 'HitboxComponent');
+        
+        if (!attackerPos || !attackerBox) continue; // Защита
+
+        const attackRange = 10;
+        const attackBox = {
+            x: attackerPos.x + attackerBox.offsetX - attackerBox.width / 2 - attackRange,
+            y: attackerPos.y + attackerBox.offsetY - attackerBox.height / 2,
+            width: attackRange,
+            height: attackerBox.height
+        };
+
+        for (const targetId of targets) {
+            const targetPos = this.world.getComponent(targetId, 'PositionComponent');
+            const targetBox = this.world.getComponent(targetId, 'HitboxComponent');
             
-            // --- VVV НОВАЯ ЛОГИКА АТАКИ ПО ХИТБОКСАМ VVV ---
-            // "Attack Range Box" - это область прямо перед хитбоксом зомби.
-            const attackRange = 10; // Дальность атаки зомби в пикселях
-            const attackBox = {
-                x: attackerPos.x + attackerBox.offsetX - attackRange,
-                y: attackerPos.y + attackerBox.offsetY,
-                width: attackRange,
-                height: attackerBox.height
+            if (!targetPos || !targetBox) continue; // Защита
+
+            const targetRect = {
+                x: targetPos.x + targetBox.offsetX - targetBox.width / 2,
+                y: targetPos.y + targetBox.offsetY - targetBox.height / 2,
+                width: targetBox.width,
+                height: targetBox.height
             };
 
-            for (const targetId of targets) {
-                const targetPos = this.world.getComponent(targetId, 'PositionComponent');
-                const targetBox = this.world.getComponent(targetId, 'HitboxComponent');
-                const targetRect = {
-                    x: targetPos.x + targetBox.offsetX,
-                    y: targetPos.y + targetBox.offsetY,
-                    width: targetBox.width,
-                    height: targetBox.height
-                };
-
-                // Проверяем пересечение "коробки атаки" с хитбоксом цели
-                if (attackBox.x < targetRect.x + targetRect.width &&
-                    attackBox.x + attackBox.width > targetRect.x &&
-                    attackBox.y < targetRect.y + targetRect.height &&
-                    attackBox.y + attackBox.height > targetRect.y)
-                {
-                    Debug.log(`Entity ${attackerId} is in range of ${targetId}. Starting attack.`);
-                    this.world.removeComponent(attackerId, 'VelocityComponent');
-                    this.world.addComponent(attackerId, new AttackingComponent(targetId));
-                    break; 
-                }
+            if (attackBox.x < targetRect.x + targetRect.width &&
+                attackBox.x + attackBox.width > targetRect.x &&
+                attackBox.y < targetRect.y + targetRect.height &&
+                attackBox.y + attackBox.height > targetRect.y)
+            {
+                Debug.log(`Entity ${attackerId} is in range of ${targetId}. Starting attack.`);
+                this.world.removeComponent(attackerId, 'VelocityComponent');
+                this.world.addComponent(attackerId, new AttackingComponent(targetId));
+                break; 
             }
         }
     }
+}
 
-    // Обрабатывает уже атакующих зомби
-    processAttacks(deltaTime) {
-        const attackingEntities = this.world.getEntitiesWithComponents('AttackingComponent', 'MeleeAttackComponent');
+processAttacks(deltaTime) {
+    const attackingEntities = this.world.getEntitiesWithComponents('AttackingComponent', 'MeleeAttackComponent');
 
-        for (const attackerId of attackingEntities) {
-            const attackState = this.world.getComponent(attackerId, 'AttackingComponent');
-            const attackParams = this.world.getComponent(attackerId, 'MeleeAttackComponent');
+    for (const attackerId of attackingEntities) {
+        const attackState = this.world.getComponent(attackerId, 'AttackingComponent');
+        const attackParams = this.world.getComponent(attackerId, 'MeleeAttackComponent');
 
-            const targetExists = this.world.entities.has(attackState.targetId);
+        // --- VVV КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ VVV ---
+        // Проверяем, существует ли цель, ПРЕЖДЕ чем пытаться получить ее компоненты
+        const targetExists = this.world.entities.has(attackState.targetId);
+        // --- ^^^ КОНЕЦ ИСПРАВЛЕНИЯ ^^^ ---
 
-            // Если цель исчезла (уже съедена), возвращаемся к ходьбе
-            if (!targetExists) {
-                Debug.log(`Entity ${attackerId} target is gone, resumes walking.`);
-                this.world.removeComponent(attackerId, 'AttackingComponent');
-                
-                // --- VVV НАДЕЖНОЕ ВОССТАНОВЛЕНИЕ СКОРОСТИ VVV ---
-                const prefab = this.world.getComponent(attackerId, 'PrefabComponent');
-                if (prefab) {
-                    const proto = this.world.factory.prototypes[prefab.name];
-                    if (proto && proto.components.VelocityComponent) {
-                        const velProto = proto.components.VelocityComponent;
-                        const speed = velProto.baseSpeed + (Math.random() * 2 - 1) * velProto.speedVariance;
-                        this.world.addComponent(attackerId, new VelocityComponent(speed, 0));
-                    }
+        if (!targetExists) {
+            Debug.log(`Entity ${attackerId} target is gone, resumes walking.`);
+            this.world.removeComponent(attackerId, 'AttackingComponent');
+            
+            const prefab = this.world.getComponent(attackerId, 'PrefabComponent');
+            if (prefab) {
+                const proto = this.world.factory.prototypes[prefab.name];
+                const velProto = proto?.components?.VelocityComponent;
+                if (velProto) {
+                    const speed = velProto.baseSpeed + (Math.random() * 2 - 1) * (velProto.speedVariance || 0);
+                    this.world.addComponent(attackerId, new VelocityComponent(speed, 0));
                 }
-                continue;
             }
+            continue;
+        }
 
-            // Обработка перезарядки и нанесения урона
-            attackParams.cooldown -= deltaTime;
-            if (attackParams.cooldown <= 0) {
-                attackParams.cooldown = attackParams.attackRate;
-                eventBus.publish('melee:hit', {
-                    attackerId: attackerId,
-                    targetId: attackState.targetId,
-                    damage: attackParams.damage
-                });
-            }
+        attackParams.cooldown -= deltaTime;
+        if (attackParams.cooldown <= 0) {
+            attackParams.cooldown = attackParams.attackRate;
+            eventBus.publish('melee:hit', {
+                attackerId: attackerId,
+                targetId: attackState.targetId,
+                damage: attackParams.damage
+            });
         }
     }
-    // Вспомогательный метод (можно оптимизировать в будущем, но для сейчас подойдет)
-    findEntityNameById(entityId) {
-        // Это не самый производительный способ, но для нашей игры его достаточно
-        // В реальном проекте у сущности мог бы быть компонент с именем ее префаба
-        const health = this.world.getComponent(entityId, 'HealthComponent');
-        if (health && health.maxHealth === 100) return 'zombie_basic'; // Пример
-        return 'zombie_basic'; // Фоллбэк
-    }
+}
+
+  
+
 }

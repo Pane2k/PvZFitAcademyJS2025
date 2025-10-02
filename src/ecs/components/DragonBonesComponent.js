@@ -1,44 +1,51 @@
-// src/ecs/components/DragonBonesComponent.js
-
-import DragonBonesRenderer from '../../core/DragonBones.js';
+import dragonBones from '../../core/DragonBones.js';
 
 export default class DragonBonesComponent {
-    /**
-     * @param {HTMLCanvasElement} canvas - Ссылка на основной canvas игры.
-     * @param {object} skeData - Загруженные JSON-данные скелета.
-     * @param {object} texData - Загруженные JSON-данные атласа.
-     * @param {HTMLImageElement} textureImage - Загруженное изображение атласа.
-     * @param {string} initialAnimation - Название анимации для запуска.
-     * @param {number} scale - Масштаб модели.
-     * @param {number} anchorOffsetY - Вертикальное смещение для рендеринга.
-     */
-    constructor(canvas, skeData, texData, textureImage, initialAnimation = 'stand', scale = 1.0, anchorOffsetY = 0) {
-        this.renderer = new DragonBonesRenderer(canvas);
-        
-        this.renderer.skeletonData = skeData;
-        this.renderer.textureData = texData;
-        this.renderer.textureImage = textureImage;
-        this.renderer._parse(); 
-        
-        this.currentAnimation = initialAnimation;
+    constructor(factory, name, initialAnimation = 'walk', scale = 1.0, anchorOffsetY = 0) {
+        this.armature = factory.buildArmature(name);
         this.scale = scale;
+        this.textureName = name;
         this.anchorOffsetY = anchorOffsetY; // <-- СОХРАНЯЕМ СМЕЩЕНИЕ
 
-        if (this.renderer.animations[this.currentAnimation]) {
-            this.renderer.play(this.currentAnimation);
+        if (this.armature) {
+            this.playAnimation(initialAnimation, true);
         } else {
-            console.error(`Initial animation "${this.currentAnimation}" not found.`);
-            const availableAnimations = this.renderer.getAnimationNames();
-            if (availableAnimations.length > 0) {
-                this.renderer.play(availableAnimations[0]);
-            }
+            console.error(`Failed to build armature: ${name}`);
         }
     }
 
     playAnimation(name, loop = true) {
-        if (name !== this.currentAnimation && this.renderer.animations[name]) {
-            this.currentAnimation = name;
-            this.renderer.play(name, loop);
+        if (this.armature) {
+            this.armature.animation.play(name, loop);
+        }
+    }
+
+    update(deltaTime) {
+        if (this.armature) {
+            this.armature.advanceTime(deltaTime);
+        }
+    }
+
+    setAttachment(slotName, attachmentName) {
+        if (!this.armature) return;
+        const slot = this.armature.getSlot(slotName);
+        if (!slot) return;
+        
+        if (!attachmentName) {
+            slot.displayData = null;
+            slot.textureData = null;
+            return;
+        }
+
+        const skin = this.armature.factory.skeletonData[this.textureName].skins['default'];
+        const displays = skin[slotName];
+        if (displays) {
+            const displayData = displays.find(d => d.name === attachmentName);
+            if (displayData) {
+                slot.displayData = displayData;
+                const textureAtlas = this.armature.factory.textureData[this.textureName].textures;
+                slot.textureData = textureAtlas[displayData.name];
+            }
         }
     }
 }

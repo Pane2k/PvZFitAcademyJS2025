@@ -61,25 +61,28 @@ export default class SunProductionSystem {
         const sunX = pos.x + offsetX;
         const sunY = pos.y + offsetY;
 
+       
         const sunId = this.world.factory.create('sun', { x: sunX, y: sunY });
-        if (sunId !== null) {
-            // Удаляем компонент скорости, т.к. это солнце не падает с неба
+         if (sunId !== null) {
+            // Удаляем компоненты, которые не нужны солнцу от подсолнуха
             this.world.removeComponent(sunId, 'VelocityComponent');
+            
+            // --- VVV ВОТ ИСПРАВЛЕНИЕ VVV ---
+            // Это солнце не должно привязываться к сетке, поэтому удаляем компонент.
+            this.world.removeComponent(sunId, 'GridLocationComponent');
+            // --- ^^^ КОНЕЦ ИСПРАВЛЕНИЯ ^^^ ---
 
-            const initialVy = -20; // Начальный импульс вверх (отрицательное значение)
-            const initialVx = (Math.random() - 0.5) * 100; // Небольшой случайный разброс по горизонтали
-            const gravity = 200; // Сила, которая будет тянуть солнце вниз
+            const initialVy = -20;
+            const initialVx = (Math.random() - 0.5) * 100;
+            const gravity = 200;
             const landingOffsetY = 30; 
             const targetY = pos.y + landingOffsetY;
 
-            // Добавляем наш новый компонент, чтобы запустить анимацию
             this.world.addComponent(sunId, new ArcMovementComponent(initialVx, initialVy, gravity, targetY));
-
             
             const sunProto = this.world.factory.prototypes.sun;
             const sunValue = sunProto.value || 25;
             this.world.addComponent(sunId, new CollectibleComponent(sunValue));
-            // Добавляем время жизни, чтобы оно не лежало вечно
             this.world.addComponent(sunId, new LifetimeComponent(10));
             Debug.log(`Sunflower ${producerId} produced sun ${sunId}.`);
         }

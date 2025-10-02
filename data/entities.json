@@ -32,6 +32,7 @@
             "RenderableComponent": { "layer": 4 },
             "VelocityComponent": { "vx": 0, "vy": 40 },
             "CollectibleComponent": {},
+            
             "GridLocationComponent": {},
             "HitboxComponent": { "offsetX": 0, "offsetY": 0, "width": 64, "height": 64 }
         }
@@ -40,20 +41,134 @@
         "spawnCost": 1,
         "components": {
             "PositionComponent": { "height": 60 },
-            "DragonBonesComponent": {
-                "skeKey": "zombie_ske",
-                "texKey": "zombie_tex",
-                "imgKey": "zombie_img",
-                "initialAnimation": "walk",
-                "scale": 0.8,
-                "anchorOffsetY": 40
-            },
+            "DragonBonesComponent": { "skeKey": "zombie_ske", "texKey": "zombie_tex", "imgKey": "zombie_img", "initialAnimation": "walk", "scale": 0.8, "anchorOffsetY": 10 },
             "RenderableComponent": { "layer": 2 },
-            "HealthComponent": { "maxHealth": 100 },
+            "HealthComponent": { "maxHealth": 180 },
             "MeleeAttackComponent": { "damage": 50, "attackRate": 1.5 },
             "VelocityComponent": { "baseSpeed": -20, "speedVariance": 5 },
-            "HitboxComponent": { "offsetX": 0, "offsetY": 30, "width": 60, "height": 60 },
-            "ZombieComponent": {}
+            "HitboxComponent": { "offsetX": 0, "offsetY": 0, "width": 60, "height": 60 },
+            "ZombieComponent": {},
+            "LimbLossComponent": {
+                "threshold": 0.5,
+                "slotsToHide": ["outArm_bottom", "outArm_hand", "outArm_top"],
+                "slotToReplace": { "slotName": "outArm_top", "attachmentName": "Zombie/outArm_lowhp" },
+                "breakEffect": { "spawnEntity": "falling_arm_effect", "anchorBone": "outArm_bottom" }
+            }
+        }
+    },
+
+    "zombie_cone": {
+        "spawnCost": 2,
+        "components": {
+            "PositionComponent": { "height": 60 },
+            "DragonBonesComponent": { "skeKey": "zombie_ske", "texKey": "zombie_tex", "imgKey": "zombie_img", "initialAnimation": "walk", "scale": 0.8, "anchorOffsetY": 10 },
+            "RenderableComponent": { "layer": 2 },
+            "HealthComponent": { "maxHealth": 180 },
+            "MeleeAttackComponent": { "damage": 50, "attackRate": 1.5 },
+            "VelocityComponent": { "baseSpeed": -20, "speedVariance": 5 },
+            "HitboxComponent": { "offsetX": 0, "offsetY": 0, "width": 60, "height": 60 },
+            "ZombieComponent": {},
+            "LimbLossComponent": {
+                "threshold": 0.5,
+                "slotsToHide": ["outArm_bottom", "outArm_hand", "outArm_top"],
+                "slotToReplace": { "slotName": "outArm_top", "attachmentName": "Zombie/outArm_lowhp" },
+                "breakEffect": { "spawnEntity": "falling_arm_effect", "anchorBone": "outArm_bottom" }
+            },
+            "ArmorComponent": { 
+                "armorSlot": "slot_helmet", 
+                "initialAttachment": "Zombie/cone_fullhp", 
+                "maxHealth": 360, 
+                "damageStates": [
+                    { "threshold": 0.66, "attachmentName": "Zombie/cone_halfhp" },
+                    { "threshold": 0.33, "attachmentName": "Zombie/cone_lowhp" }
+                ],
+                "breakEffect": { "spawnEntity": "falling_cone_effect", "anchorBone": "head" }
+            }
+        }
+    },
+
+    "zombie_bucket": {
+        "spawnCost": 4,
+        "components": {
+            "PositionComponent": { "height": 60 },
+            "DragonBonesComponent": { "skeKey": "zombie_ske", "texKey": "zombie_tex", "imgKey": "zombie_img", "initialAnimation": "walk", "scale": 0.8, "anchorOffsetY": 10 },
+            "RenderableComponent": { "layer": 2 },
+            "HealthComponent": { "maxHealth": 180 },
+            "MeleeAttackComponent": { "damage": 50, "attackRate": 1.5 },
+            "VelocityComponent": { "baseSpeed": -20, "speedVariance": 5 },
+            "HitboxComponent": { "offsetX": 0, "offsetY": 0, "width": 60, "height": 60 },
+            "ZombieComponent": {},
+            "LimbLossComponent": {
+                "threshold": 0.5,
+                "slotsToHide": ["outArm_bottom", "outArm_hand", "outArm_top"],
+                "slotToReplace": { "slotName": "outArm_top", "attachmentName": "Zombie/outArm_lowhp" },
+                "breakEffect": { "spawnEntity": "falling_arm_effect", "anchorBone": "outArm_bottom" }
+            },
+            "ArmorComponent": { 
+                "armorSlot": "slot_helmet", 
+                "initialAttachment": "Zombie/bucket_fullhp", 
+                "maxHealth": 1100, 
+                "damageStates": [
+                    { "threshold": 0.66, "attachmentName": "Zombie/bucket_halfhp" },
+                    { "threshold": 0.33, "attachmentName": "Zombie/bucket_lowhp" }
+                ],
+                "breakEffect": { "spawnEntity": "falling_bucket_effect", "anchorBone": "head" }
+            }
+        }
+    },
+
+    "zombie_flag": {
+        "spawnCost": 1,
+        "components": {
+            "PositionComponent": { "height": 60 },
+            "DragonBonesComponent": { "skeKey": "zombie_ske", "texKey": "zombie_tex", "imgKey": "zombie_img", "initialAnimation": "walk_flag", "scale": 0.8, "anchorOffsetY": 10 },
+            "RenderableComponent": { "layer": 2 },
+            "HealthComponent": { "maxHealth": 180 },
+            "MeleeAttackComponent": { "damage": 50, "attackRate": 1.5 },
+            "VelocityComponent": { "baseSpeed": -30, "speedVariance": 5 },
+            "HitboxComponent": { "offsetX": 0, "offsetY": 0, "width": 60, "height": 60 },
+            "ZombieComponent": {},
+            "LimbLossComponent": {
+                "threshold": 0.5,
+                "slotsToHide": ["outArm_bottom", "outArm_hand", "outArm_top"],
+                "slotToReplace": { "slotName": "outArm_top", "attachmentName": "Zombie/outArm_lowhp" },
+                "breakEffect": { "spawnEntity": "falling_arm_effect", "anchorBone": "outArm_bottom" }
+            },
+            "FlagComponent": {
+                "flagSlot": "slot_flag",
+                "attachmentName": "Zombie/flag_fullhp",
+                "animationOverrides": {
+                    "walk": "walk_flag",
+                    "attack": "attack_flag"
+                }
+            }
+        }
+    },
+    "falling_cone_effect": {
+        "components": {
+            "PositionComponent": { "height": 60 },
+            "SpriteComponent": { "assetKey": "zombie_img", "region": { "name": "Zombie/cone_lowhp" } },
+            "RenderableComponent": { "layer": 3 },
+            "ArcMovementComponent": { "vx": -30, "vy": -200, "gravity": 800, "targetY": 1000 },
+            "LifetimeComponent": { "duration": 2 }
+        }
+    },
+    "falling_bucket_effect": {
+        "components": {
+            "PositionComponent": { "height": 70 },
+            "SpriteComponent": { "assetKey": "zombie_img", "region": { "name": "Zombie/bucket_lowhp" } },
+            "RenderableComponent": { "layer": 3 },
+            "ArcMovementComponent": { "vx": -25, "vy": -220, "gravity": 800, "targetY": 1000 },
+            "LifetimeComponent": { "duration": 2 }
+        }
+    },
+    "falling_arm_effect": {
+        "components": {
+            "PositionComponent": { "height": 40 },
+            "SpriteComponent": { "assetKey": "zombie_img", "region": { "name": "Zombie/outArm_bottom" } },
+            "RenderableComponent": { "layer": 3 },
+            "ArcMovementComponent": { "vx": -15, "vy": -180, "gravity": 800, "targetY": 1000 },
+            "LifetimeComponent": { "duration": 1.5 }
         }
     },
     "lawnmower": {
@@ -67,7 +182,7 @@
     },
     "sunflower": {
         "cost": 50,
-        "cooldown": 7.5,
+        "cooldown": 15,
         "components": {
             "PositionComponent": { "height": 70 },
             "SpriteComponent": { "assetKey": "sunflower" },
@@ -77,6 +192,7 @@
             "PlantComponent": {},
             "HitboxComponent": { "offsetX": 0, "offsetY": 3, "width": 40, "height": 65 },
             "SunProducerComponent": { "productionRate": 5 }
+            
         }
     }
 }

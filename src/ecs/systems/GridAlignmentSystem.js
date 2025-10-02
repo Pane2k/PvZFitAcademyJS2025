@@ -1,3 +1,4 @@
+// src/ecs/systems/GridAlignmentSystem.js
 import Debug from "../../core/Debug.js";
 
 export default class GridAlignmentSystem {
@@ -8,9 +9,9 @@ export default class GridAlignmentSystem {
 
     update() {
         if (!this.grid) {
-            Debug.warn('GridAlignmentSystem: No grid available.')
-            return
-        };
+            Debug.warn('GridAlignmentSystem: No grid available.');
+            return;
+        }
 
         const entities = this.world.getEntitiesWithComponents(
             'GridLocationComponent',
@@ -18,12 +19,20 @@ export default class GridAlignmentSystem {
         );
 
         for (const entityId of entities) {
-            const isStatic = !this.world.getComponent(entityId, 'VelocityComponent');
+            // --- VVV КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ VVV ---
+            // Объект считается статичным, только если у него НЕТ НИ ОДНОГО
+            // компонента, отвечающего за движение.
+            const isMoving = this.world.getComponent(entityId, 'VelocityComponent') ||
+                             this.world.getComponent(entityId, 'ArcMovementComponent') ||
+                             this.world.getComponent(entityId, 'UITravelComponent');
+            
+            const isStatic = !isMoving;
+            // --- ^^^ КОНЕЦ ИСПРАВЛЕНИЯ ^^^ ---
+
             if (isStatic) {
                 const gridLoc = this.world.getComponent(entityId, 'GridLocationComponent');
                 const pos = this.world.getComponent(entityId, 'PositionComponent');
 
-                // NOTE: Получаем центральную точку ячейки и напрямую присваиваем ее
                 const targetWorldPos = this.grid.getWorldPos(gridLoc.row, gridLoc.col);
                 
                 pos.x = targetWorldPos.x;

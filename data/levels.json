@@ -1,11 +1,11 @@
 {
     "level_1": {
         "name": "Day - Front Yard",
-        "availableZombies": ["zombie_basic"],
+        "availableZombies": ["zombie_basic", "zombie_cone"],
         "waves": [
             {
                 "type": "mini",
-                "spawnPoints": 1,
+                "spawnPoints": 2,
                 "delayAfter": 15
             },
             {
