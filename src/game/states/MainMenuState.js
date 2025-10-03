@@ -84,10 +84,21 @@ export default class MainMenuState extends BaseState {
         
         for (let i = 0; i < 5; i++) {
             const levelId = i + 1;
+            const isUnlocked = progressManager.isLevelUnlocked(levelId);
+            
             this.levelSelectElements.push({
-                id: levelId, x: blockStartX + i * (cardWidth + cardSpacing), y: cardY, 
-                width: cardWidth, height: cardHeight, font: cardFont, isUnlocked: progressManager.isLevelUnlocked(levelId),
-                onClick: () => { if(progressManager.isLevelUnlocked(levelId)) this.game.stateManager.changeState(new GameplayState(this.game)); }
+                id: levelId,
+                x: blockStartX + i * (cardWidth + cardSpacing), 
+                y: cardY, 
+                width: cardWidth, 
+                height: cardHeight,
+                font: cardFont, // <-- ВОТ ЭТО СВОЙСТВО ОТСУТСТВОВАЛО
+                isUnlocked: isUnlocked,
+                onClick: () => { 
+                    if(isUnlocked) {
+                        this.game.stateManager.changeState(new GameplayState(this.game, levelId)); 
+                    }
+                }
             });
         }
         

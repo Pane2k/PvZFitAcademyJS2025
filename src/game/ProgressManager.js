@@ -58,6 +58,16 @@ class ProgressManager {
             }
         };
     }
+    completeLevel(levelId) {
+        const nextLevelId = levelId + 1;
+        if (!this.isLevelUnlocked(nextLevelId)) {
+            this.progress.unlockedLevels.push(nextLevelId);
+            this.saveProgress();
+            Debug.log(`Level ${nextLevelId} unlocked!`);
+        } else {
+            Debug.log(`Level ${nextLevelId} was already unlocked.`);
+        }
+    }
 }
 
 // Экспортируем синглтон

@@ -77,10 +77,11 @@ export default class Renderer{
         );
     }
     drawText(text, virtualX, virtualY, font, color, textAlign = 'left', textBaseline = 'top') {
+        const safeFont = font || '16px Arial';
         this.ctx.save();
 
         // 1. Масштабируем размер шрифта
-        const parts = font.split(' ');
+        const parts = safeFont.split(' '); // Используем safeFont
         const virtualSize = parseFloat(parts[0]);
         const physicalSize = virtualSize * this.scale;
         const scaledFont = `${physicalSize}px ${parts.slice(1).join(' ')}`;

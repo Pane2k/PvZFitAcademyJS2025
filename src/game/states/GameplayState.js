@@ -26,6 +26,13 @@ import ArmorSystem from "../../ecs/systems/ArmorSystem.js";
 import HealthMonitorSystem from "../../ecs/systems/HealthMonitorSystem.js";
 import DragonBonesSystem from "../../ecs/systems/DragonBonesSystem.js";
 
+import CameraSystem from "../../ecs/systems/CameraSystem.js";
+import LoseSequenceSystem from "../../ecs/systems/LoseSequenceSystem.js";
+import DeathLootSystem from "../../ecs/systems/DeathLootSystem.js";
+import ScaleAnimationSystem from "../../ecs/systems/ScaleAnimationSystem.js";
+import FadeEffectSystem from "../../ecs/systems/FadeEffectSystem.js";
+import VictorySystem from "../../ecs/systems/VictorySystem.js";
+
 import Grid from "../Grid.js";
 import Factory from "../Factory.js";
 import eventBus from "../../core/EventBus.js";
@@ -36,13 +43,17 @@ import WinState from "./WinState.js";
 import LoseState from "./LoseState.js";
 import MainMenuState from "./MainMenuState.js";
 
+
 import PauseMenu from "../../ui/PauseMenu.js";
 import ConfirmationDialog from "../../ui/ConfirmationDialog.js";
 
+import progressManager from "../ProgressManager.js"
+
 export default class GameplayState extends BaseState {
-     constructor(game) {
+     constructor(game, levelId) {
         super();
         this.game = game;
+        this.levelId = levelId || 1
         this.hud = new HUD();
         this.debugOverlay = new DebugOverlay();
         this.grid = null;
@@ -53,19 +64,30 @@ export default class GameplayState extends BaseState {
         this.resize = this.resize.bind(this);
         window.addEventListener('resize', this.resize);
         
+        this.cameraSystem = new CameraSystem();
+        this.loseSequenceSystem = new LoseSequenceSystem(this.cameraSystem);
+
         // --- ИСПРАВЛЕНИЕ: Сохраняем привязанные функции для корректной отписки ---
         this.boundHandleInput = this.handleInput.bind(this);
         this.boundHandleKeyDown = this.handleKeyDown.bind(this);
-        this.boundOnWin = () => this.game.stateManager.changeState(new WinState(this.game, this));
-        this.boundOnLose = () => this.game.stateManager.changeState(new LoseState(this.game, this));
+        
+        this.boundOnWin = () => {
+            progressManager.completeLevel(this.levelId);
+            this.game.stateManager.changeState(new MainMenuState(this.game, 1));
+        };
+        this.boundOnLose = () => {
+            this.game.stateManager.changeState(new MainMenuState(this.game, 1));
+        };
+        this.boundConfirmExit = () => {
+            this.game.stateManager.changeState(new MainMenuState(this.game, 1));
+        };
+        
         this.boundOnResume = () => this.togglePause(false);
         this.boundShowConfirm = this.showConfirmation.bind(this);
         this.boundHideConfirm = this.hideConfirmation.bind(this);
-        // --- ИЗМЕНЕНИЕ: Создаем привязанную функцию для выхода в меню ---
-        this.boundConfirmExit = () => {
-            Debug.log("Confirmed exit. Changing to MainMenuState.");
-            this.game.stateManager.changeState(new MainMenuState(this.game));
-        };
+        
+        // Вот он, виновник. .start() не был привязан к контексту loseSequenceSystem.
+        this.boundStartLoseSeq = this.loseSequenceSystem.start.bind(this.loseSequenceSystem);
     }
 
     // --- ПОЛНОСТЬЮ ПЕРЕРАБОТАННЫЙ МЕТОД-МАРШРУТИЗАТОР ВВОДА ---
@@ -121,7 +143,10 @@ export default class GameplayState extends BaseState {
     enter() {
         Debug.log('Entering GameplayState...');
         const entityPrototypes = this.game.assetLoader.getJSON('entities');
-        const levelData = this.game.assetLoader.getJSON('levels').level_1;
+        this.cameraSystem.reset();
+
+        const levelsData = this.game.assetLoader.getJSON('levels');
+        const levelData = levelsData[`level_${this.levelId}`] || levelsData.level_1;
 
         this.game.factory = new Factory(this.game.world, this.game.assetLoader, entityPrototypes, null);
         this.game.world.factory = this.game.factory;
@@ -169,6 +194,13 @@ export default class GameplayState extends BaseState {
         this.game.world.addSystem(new ArmorSystem());
         this.game.world.addSystem(new HealthMonitorSystem());
 
+        this.game.world.addSystem(this.cameraSystem);
+        this.game.world.addSystem(this.loseSequenceSystem);
+        this.game.world.addSystem(new DeathLootSystem());
+        this.game.world.addSystem(new ScaleAnimationSystem());
+        this.game.world.addSystem(new FadeEffectSystem());
+        this.game.world.addSystem(new VictorySystem());
+
         this.createLawnmowers();
         this.game.world.grid = this.grid;
 
@@ -179,7 +211,7 @@ export default class GameplayState extends BaseState {
         eventBus.subscribe('ui:hide_exit_confirmation', this.boundHideConfirm);
         // --- ИЗМЕНЕНИЕ: Подписываемся на событие подтверждения выхода ---
         eventBus.subscribe('game:confirm_exit', this.boundConfirmExit);
-
+        eventBus.subscribe('game:start_lose_sequence', this.boundStartLoseSeq);
         eventBus.subscribe('input:down', this.boundHandleInput);
         eventBus.subscribe('input:up', this.boundHandleInput);
         eventBus.subscribe('input:move', this.boundHandleInput);
@@ -188,6 +220,7 @@ export default class GameplayState extends BaseState {
 
     exit() {
         Debug.log('Exiting GameplayState...');
+        this.loseSequenceSystem.reset();
         window.removeEventListener('resize', this.resize);
         this.game.gameLoop.setTimeScale(1.0);
         // --- ИСПРАВЛЕНИЕ: Отписываемся от ТЕХ ЖЕ САМЫХ функций, что и подписывались ---
@@ -197,7 +230,7 @@ export default class GameplayState extends BaseState {
         eventBus.unsubscribe('ui:show_exit_confirmation', this.boundShowConfirm);
         eventBus.unsubscribe('ui:hide_exit_confirmation', this.boundHideConfirm);
         eventBus.unsubscribe('game:confirm_exit', this.boundConfirmExit);
-
+        eventBus.unsubscribe('game:start_lose_sequence', this.boundStartLoseSeq);
         eventBus.unsubscribe('input:down', this.boundHandleInput);
         eventBus.unsubscribe('input:up', this.boundHandleInput);
         eventBus.unsubscribe('input:move', this.boundHandleInput);
@@ -211,6 +244,7 @@ export default class GameplayState extends BaseState {
 
     update(deltaTime) {
         if (!this.isPaused) {
+            this.game.world.deltaTime = deltaTime; 
             this.game.world.update(deltaTime);
         }
         // HUD и оверлей обновляются всегда
@@ -232,20 +266,29 @@ export default class GameplayState extends BaseState {
     
     render() {
         this.game.renderer.clear('#2c3e50');
-        if (this.background) this.background.drawBack(this.game.renderer);
+        const camOffset = this.cameraSystem.currentOffsetX;
         
-        if (this.renderSystem) {
-            // Отрисовываем игровой мир и HUD
-            this.renderSystem.update(0, 99);
-            const selectedPlant = this.playerInputSystem ? this.playerInputSystem.selectedPlant : null;
-            this.hud.draw(this.game.renderer, selectedPlant);
-            this.renderSystem.update(100, Infinity);
+        // --- ИЗМЕНЕНИЕ: Фон тоже должен двигаться вместе с камерой ---
+        const ctx = this.game.renderer.ctx;
+        ctx.save();
+        // Применяем сдвиг ДО отрисовки фона
+        ctx.translate(camOffset * this.game.renderer.scale, 0);
+        if (this.background) this.background.drawBack(this.game.renderer);
+        ctx.restore();
+
+        // Находим систему рендеринга один раз
+        const renderSystem = this.game.world.systems.find(s => s instanceof RenderSystem);
+
+        if (renderSystem) {
+            // --- ИЗМЕНЕНИЕ: Один вызов update для всех слоев ---
+            renderSystem.update(camOffset);
         }
         
-        // --- ОТРИСОВКА UI ПОВЕРХ ВСЕГО ---
+        // UI рендерится поверх всего и без смещения
+        const selectedPlant = this.playerInputSystem ? this.playerInputSystem.selectedPlant : null;
+        this.hud.draw(this.game.renderer, selectedPlant);
         if (this.pauseMenu) this.pauseMenu.draw(this.game.renderer);
         if (this.confirmationDialog) this.confirmationDialog.draw(this.game.renderer);
-        // ---
         
         this.debugOverlay.draw(this.game.renderer);
     }

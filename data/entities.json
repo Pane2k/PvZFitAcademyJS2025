@@ -194,5 +194,38 @@
             "SunProducerComponent": { "productionRate": 5 }
             
         }
+    },
+    "trophy": {
+        "components": {
+            "PositionComponent": { "height": 80 },
+            "SpriteComponent": { "assetKey": "trophy" },
+            "RenderableComponent": { "layer": 90 },
+            "HitboxComponent": { "offsetX": 0, "offsetY": 0, "width": 80, "height": 80 },
+            "VictoryTrophyComponent": {}
+        }
+    },
+    "screen_fade_effect": {
+        "components": {
+            "PositionComponent": { "x": 640, "y": 360, "width": 1280, "height": 720 },
+            "RenderableComponent": { "layer": 100 },
+            "FadeEffectComponent": { "duration": 1.5, "startAlpha": 0, "targetAlpha": 1 }
+        }
+    },
+    "game_over_text": {
+        "components": {
+            "PositionComponent": { "x": 640, "y": 360 },
+            "RenderableComponent": { "layer": 95 },
+            "TextComponent": { "text": "THE ZOMBIES ATE YOUR BRAINS!", "font": "60px Arial", "color": "#FF4D4D" },
+            
+            "BounceAnimationComponent": { "duration": 0.8, "targetScale": 1.0 }
+        }
+    },
+     "white_screen_fade": {
+        "components": {
+            "PositionComponent": { "x": 640, "y": 360, "width": 1280, "height": 720 },
+            "RenderableComponent": { "layer": 200 },
+            "FillColorComponent": { "color": "white" },
+            "FadeEffectComponent": { "duration": 0.5, "startAlpha": 0, "targetAlpha": 1 }
+        }
     }
 }

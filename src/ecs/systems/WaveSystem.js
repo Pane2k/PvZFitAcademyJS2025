@@ -7,6 +7,7 @@ export default class WaveSystem {
         this.levelData = levelData;
         this.entityPrototypes = entityPrototypes;
         this.factory = factory;
+         this.isStopped = false;
 
         this.currentWaveIndex = -1;
         this.waveTimer = 5; // Небольшая задержка перед первой волной
@@ -20,10 +21,42 @@ export default class WaveSystem {
         this.announcementTimer = 0;
         this.ANNOUNCEMENT_DURATION = 4.0; 
 
+        this.totalZombiesToSpawn = this.calculateTotalZombies();
+        this.zombiesDefeated = 0;
+        this.isFinalZombieMarked = false;
+
+        // --- НОВЫЙ ПОДПИСЧИК ---
+        eventBus.subscribe('zombie:defeated', () => this.onZombieDefeated());
+        eventBus.subscribe('game:start_lose_sequence', () => {
+            Debug.log("WaveSystem: Lose sequence detected. Halting all operations.");
+            this.isStopped = true;
+        });
+
         this.setupZombiePool();
         this.publishProgress();
     }
+    calculateTotalZombies() {
+        let count = 0;
+        // Приблизительный расчет, можно сделать точнее, если "проиграть" спавн
+        for(const wave of this.levelData.waves) {
+            count += wave.spawnPoints; // Грубый подсчет, т.к. зомби стоят > 1
+        }
+        return Math.max(1, count); // Убедимся, что не ноль
+    }
+    onZombieDefeated() {
+        this.zombiesDefeated++;
+        const zombiesOnField = this.world.getEntitiesWithComponents('ZombieComponent').length;
 
+        // Условие: последняя волна активна И на поле остался 1 зомби И мы еще не помечали его
+        if (this.currentWaveIndex === this.levelData.waves.length - 1 && zombiesOnField === 1 && !this.isFinalZombieMarked) {
+             const lastZombieId = this.world.getEntitiesWithComponents('ZombieComponent')[0];
+             if (lastZombieId) {
+                 this.world.addComponent(lastZombieId, new DropsTrophyOnDeathComponent());
+                 this.isFinalZombieMarked = true;
+                 Debug.log(`Last zombie (${lastZombieId}) has been marked to drop the trophy.`);
+             }
+        }
+    }
     setupZombiePool() {
         this.zombiePool = this.levelData.availableZombies.map(name => {
             const proto = this.entityPrototypes[name];
@@ -34,6 +67,7 @@ export default class WaveSystem {
     }
 
     update(deltaTime) {
+        if (this.isStopped || !this.factory || !this.factory.grid) return;
         if (!this.factory || !this.factory.grid) return;
 
         if (this.isWaitingForHugeWave) {
@@ -57,7 +91,7 @@ export default class WaveSystem {
         {
             // Дополнительная проверка: убедимся, что мы уже потратили *почти* все очки спавна.
             // Это предотвратит победу, если последняя волна была "огромной", но еще не заспавнилась.
-            if (!this.isCompleted && this.spawnPointsSpent >= this.totalSpawnPoints) {
+            if (!this.isCompleted && !this.isStopped && this.spawnPointsSpent >= this.totalSpawnPoints) {
                 this.isCompleted = true;
                 Debug.log("--- ALL WAVES DEFEATED! YOU WIN! ---");
                 eventBus.publish('game:win');

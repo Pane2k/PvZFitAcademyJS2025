@@ -1,5 +1,6 @@
 import Debug from "../../core/Debug.js";
 import HiddenComponent from "../components/HiddenComponent.js";
+import FillColorComponent from "../components/FillColorComponent.js"
 
 export default class RenderSystem {
     constructor(renderer, assetLoader) {
@@ -10,12 +11,15 @@ export default class RenderSystem {
         this.offscreenCtx = this.offscreenCanvas.getContext('2d');
     }
 
-    update(minLayer = -Infinity, maxLayer = Infinity) {
+    update(cameraOffsetX = 0) {
+        // --- ИЗМЕНЕНИЕ: Удаляем разделение на слои, теперь это единый вызов ---
         let entitiesToRender = this.world.getEntitiesWithComponents('PositionComponent', 'RenderableComponent');
+        
         entitiesToRender = entitiesToRender.filter(entityID => {
-            const renderable = this.world.getComponent(entityID, 'RenderableComponent');
-            const hasVisuals = this.world.getComponent(entityID, 'SpriteComponent') || this.world.getComponent(entityID, 'DragonBonesComponent');
-            return hasVisuals && renderable.layer >= minLayer && renderable.layer <= maxLayer;
+            const hasVisuals = this.world.getComponent(entityID, 'SpriteComponent') || 
+                               this.world.getComponent(entityID, 'DragonBonesComponent') ||
+                               this.world.getComponent(entityID, 'TextComponent');
+            return hasVisuals && !this.world.getComponent(entityID, 'HiddenComponent');
         });
 
         entitiesToRender.sort((a, b) => {
@@ -28,41 +32,94 @@ export default class RenderSystem {
         });
 
         for (const entityID of entitiesToRender) {
-            if (this.world.getComponent(entityID, 'HiddenComponent')) continue;
             const pos = this.world.getComponent(entityID, 'PositionComponent');
             const spriteComp = this.world.getComponent(entityID, 'SpriteComponent');
             const dbComp = this.world.getComponent(entityID, 'DragonBonesComponent');
-            const drawX = pos.x - pos.width / 2;
-            const drawY = pos.y - pos.height / 2;
+            const textComp = this.world.getComponent(entityID, 'TextComponent');
+            const fadeComp = this.world.getComponent(entityID, 'FadeEffectComponent');
+            const fillComp = this.world.getComponent(entityID, 'FillColorComponent');
 
-            if (spriteComp && spriteComp.image) {
-                this.renderSprite(entityID, spriteComp, pos, drawX, drawY);
-            } else if (dbComp && dbComp.armature) {
-                this.renderDragonBones(dbComp, pos);
+            // --- КЛЮЧЕВОЕ ИЗМЕНЕНИЕ: Определяем, нужно ли смещать объект ---
+            // UI-элементы и эффекты на весь экран (слой >= 100) не смещаются
+            const isStatic = this.world.getComponent(entityID, 'RenderableComponent').layer >= 90;
+
+            const finalOffsetX = isStatic ? 0 : cameraOffsetX;
+            
+            // (расчет finalWidth, finalHeight, drawX, drawY остается без изменений)
+            const finalWidth = pos.width * pos.scale;
+            const finalHeight = pos.height * pos.scale;
+            const drawX = (pos.x - finalWidth / 2) + finalOffsetX;
+            const drawY = (pos.y - finalHeight / 2);
+
+             const ctx = this.renderer.ctx;
+            ctx.save();
+            if (fadeComp) {
+                ctx.globalAlpha = fadeComp.currentAlpha;
             }
 
-            if (Debug.showHitboxes) this.drawDebugHitbox(entityID, pos);
-            if (Debug.showHealthBars) this.drawDebugHealthBar(entityID, pos, drawX, drawY);
+            // --- НОВЫЙ БЛОК ДЛЯ ОТРИСОВКИ ПРЯМОУГОЛЬНИКА ---
+            if (fillComp) {
+                ctx.fillStyle = fillComp.color;
+                const pX = drawX * this.renderer.scale + this.renderer.offsetX;
+                const pY = drawY * this.renderer.scale + this.renderer.offsetY;
+                const pW = finalWidth * this.renderer.scale;
+                const pH = finalHeight * this.renderer.scale;
+                ctx.fillRect(pX, pY, pW, pH);
+            }
+            // --- КОНЕЦ НОВОГО БЛОКА ---
+            else if (spriteComp && spriteComp.image) {
+                this.renderSprite(entityID, spriteComp, pos, drawX, drawY, finalWidth, finalHeight);
+            } else if (dbComp && dbComp.armature) {
+                this.renderDragonBones(dbComp, pos, finalOffsetX);
+            } else if (textComp) {
+                const physicalX = (pos.x + finalOffsetX) * this.renderer.scale + this.renderer.offsetX;
+                const physicalY = pos.y * this.renderer.scale + this.renderer.offsetY;
+                
+                ctx.save();
+                // Применяем трансформации относительно центра текста
+                ctx.translate(physicalX, physicalY);
+                ctx.scale(pos.scale, pos.scale);
+                
+                // Рисуем сам текст (Renderer.drawText больше не используется здесь)
+                const parts = textComp.font.split(' ');
+                const virtualSize = parseFloat(parts[0]);
+                const physicalSize = virtualSize * this.renderer.scale;
+                ctx.font = `${physicalSize}px ${parts.slice(1).join(' ')}`;
+                ctx.fillStyle = textComp.color;
+                ctx.textAlign = textComp.textAlign;
+                ctx.textBaseline = textComp.textBaseline;
+                ctx.fillText(textComp.text, 0, 0); // Рисуем в точке (0,0) нового отмасштабированного контекста
+                ctx.restore();
+            }
+            
+            ctx.restore();
+
+            if (Debug.showHitboxes) this.drawDebugHitbox(entityID, pos, finalOffsetX);
+            // --- ИСПРАВЛЕНИЕ ЗДЕСЬ: передаем правильную ширину в health bar ---
+            if (Debug.showHealthBars) this.drawDebugHealthBar(entityID, pos, drawX, drawY, finalWidth);
         }
     }
 
-    renderSprite(entityID, spriteComp, pos, drawX, drawY) {
+    renderSprite(entityID, spriteComp, pos, drawX, drawY, drawWidth, drawHeight) {
         const tint = this.world.getComponent(entityID, 'TintEffectComponent');
         const ghost = this.world.getComponent(entityID, 'GhostPlantComponent');
         const ctx = this.renderer.ctx;
+        
         ctx.save();
         if (ghost) ctx.globalAlpha = ghost.alpha;
+        
         if (tint) {
-            this.drawTintedImage(spriteComp.image, drawX, drawY, pos.width, pos.height, tint.getCurrentColor());
+            this.drawTintedImage(spriteComp.image, drawX, drawY, drawWidth, drawHeight, tint.getCurrentColor());
         } else if (spriteComp.region) {
-            this.renderer.drawPartialImage(spriteComp.image, spriteComp.region.x, spriteComp.region.y, spriteComp.region.width, spriteComp.region.height, drawX, drawY, pos.width, pos.height);
+            this.renderer.drawPartialImage(spriteComp.image, spriteComp.region.x, spriteComp.region.y, spriteComp.region.width, spriteComp.region.height, drawX, drawY, drawWidth, drawHeight);
         } else {
-            this.renderer.drawImage(spriteComp.image, drawX, drawY, pos.width, pos.height);
+            this.renderer.drawImage(spriteComp.image, drawX, drawY, drawWidth, drawHeight);
         }
+        
         ctx.restore();
     }
 
-    renderDragonBones(dbComp, pos) {
+    renderDragonBones(dbComp, pos, cameraOffsetX = 0) {
         const armature = dbComp.armature;
         const textureImage = this.assetLoader.getImage(dbComp.textureName.replace('_ske', '_img'));
         if (!textureImage) return;
@@ -70,7 +127,7 @@ export default class RenderSystem {
         const ctx = this.renderer.ctx;
         ctx.save();
         
-        const physicalX = pos.x * this.renderer.scale + this.renderer.offsetX;
+        const physicalX = (pos.x + cameraOffsetX) * this.renderer.scale + this.renderer.offsetX;
         const physicalY = (pos.y + dbComp.anchorOffsetY) * this.renderer.scale + this.renderer.offsetY;
         const finalScale = dbComp.scale * this.renderer.scale;
 
@@ -122,10 +179,10 @@ export default class RenderSystem {
         ctx.restore();
     }
 
-    drawDebugHitbox(entityID, pos) {
+    drawDebugHitbox(entityID, pos, cameraOffsetX = 0) {
         const hitbox = this.world.getComponent(entityID, 'HitboxComponent');
         if (hitbox) {
-            const hitboxCenterX = pos.x + hitbox.offsetX;
+            const hitboxCenterX = pos.x + hitbox.offsetX + cameraOffsetX;
             const hitboxCenterY = pos.y + hitbox.offsetY;
             const hitboxDrawX = hitboxCenterX - hitbox.width / 2;
             const hitboxDrawY = hitboxCenterY - hitbox.height / 2;
@@ -133,13 +190,16 @@ export default class RenderSystem {
         }
     }
 
-    drawDebugHealthBar(entityID, pos, drawX, drawY) {
+     drawDebugHealthBar(entityID, pos, drawX, drawY, finalWidth) {
         const health = this.world.getComponent(entityID, 'HealthComponent');
         if (health && health.maxHealth > 0) {
-            const barWidth = pos.width > 0 ? pos.width * 0.8 : 50;
+            // Используем finalWidth вместо pos.width
+            const barWidth = finalWidth > 0 ? finalWidth * 0.8 : 50;
             const barHeight = 8;
-            const barX = drawX + (pos.width - barWidth) / 2;
+            const barX = drawX + (finalWidth - barWidth) / 2;
             const barY = drawY - barHeight - 5;
+            
+            // ... (остальной код отрисовки health bar без изменений)
             const pBarX = barX * this.renderer.scale + this.renderer.offsetX;
             const pBarY = barY * this.renderer.scale + this.renderer.offsetY;
             const pBarWidth = barWidth * this.renderer.scale;

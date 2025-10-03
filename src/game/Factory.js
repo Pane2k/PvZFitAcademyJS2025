@@ -1,8 +1,13 @@
+// src/game/Factory.js
+
+import Debug from "../core/Debug.js";
+import dragonBones from "../core/DragonBones.js";
+
+// (Список импортов всех компонентов остается без изменений)
 import PositionComponent from "../ecs/components/PositionComponent.js";
 import SpriteComponent from "../ecs/components/SpriteComponent.js";
 import RenderableComponent from "../ecs/components/RenderableComponent.js";
 import GridLocationComponent from '../ecs/components/GridLocationComponent.js';
-import Debug from "../core/Debug.js";
 import VelocityComponent from "../ecs/components/VelocityComponent.js";
 import CollectibleComponent from "../ecs/components/CollectibleComponent.js";
 import LifetimeComponent from "../ecs/components/LifetimeComponent.js";
@@ -29,7 +34,15 @@ import ArmorComponent from "../ecs/components/ArmorComponent.js";
 import FlagComponent from "../ecs/components/FlagComponent.js";
 import LimbLossComponent from "../ecs/components/LimbLossComponent.js";
 import DyingComponent from "../ecs/components/DyingComponent.js";
-import dragonBones from "../core/DragonBones.js";
+import TextComponent from "../ecs/components/TextComponent.js";
+import FadeEffectComponent from "../ecs/components/FadeEffectComponent.js";
+import BounceAnimationComponent from "../ecs/components/BounceAnimationComponent.js";
+import ScaleAnimationComponent from "../ecs/components/ScaleAnimationComponent.js";
+import VictoryTrophyComponent from "../ecs/components/VictoryTrophyComponent.js";
+import DropsTrophyOnDeathComponent from "../ecs/components/DropsTrophyOnDeathComponent.js";
+import LeadLosingZombieComponent from "../ecs/components/LeadLosingZombieComponent.js";
+import UITravelComponent from "../ecs/components/UITravelComponent.js";
+import FillColorComponent from "../ecs/components/FillColorComponent.js";
 
 const componentMap = {
     PositionComponent, SpriteComponent, RenderableComponent, GridLocationComponent,
@@ -39,15 +52,14 @@ const componentMap = {
     PrefabComponent, ZombieComponent, LawnmowerComponent, SunProducerComponent,
     ArcMovementComponent, TintEffectComponent, GhostPlantComponent, HiddenComponent,
     CursorAttachmentComponent, DragonBonesComponent, ArmorComponent, FlagComponent,
-    LimbLossComponent, DyingComponent
+    LimbLossComponent, DyingComponent, TextComponent, FadeEffectComponent,
+    BounceAnimationComponent, ScaleAnimationComponent, VictoryTrophyComponent,
+    DropsTrophyOnDeathComponent, LeadLosingZombieComponent, UITravelComponent, FillColorComponent 
 };
 
-const HELMET_SLOTS = [
-    'cone_lowhp', 'cone_halfhp', 'cone_fullhp',
-    'bucket_lowhp', 'bucket_halfhp', 'bucket_fullhp'
-];
 
 export default class Factory {
+    // constructor, _parseAllDragonBones, create - без изменений
     constructor(world, assetLoader, entityPrototypes, grid) {
         this.world = world;
         this.assetLoader = assetLoader;
@@ -56,7 +68,6 @@ export default class Factory {
         this.dbFactory = new dragonBones.Factory();
         this._parseAllDragonBones(entityPrototypes);
     }
-
     _parseAllDragonBones(prototypes) {
         const parsed = new Set();
         for (const key in prototypes) {
@@ -71,118 +82,121 @@ export default class Factory {
             }
         }
     }
-    
-    create(name, initialData) {
+    create(name, initialData = {}) {
         const proto = this.prototypes[name];
         if (!proto) { Debug.error(`No entity prototype found for name: ${name}`); return null; }
+
         const entityID = this.world.createEntity();
         this.world.addComponent(entityID, new PrefabComponent(name));
 
         for (const compName in proto.components) {
-            const CompClass = componentMap[compName];
-            if (!CompClass) { Debug.warn(`Unknown component type: ${compName}`); continue; }
             const protoData = proto.components[compName];
-            let component;
-
-            if (compName === 'DragonBonesComponent') {
-                component = new CompClass(this.dbFactory, protoData.skeKey, protoData.initialAnimation, protoData.scale, protoData.anchorOffsetY || 0);
-            } else if (['ArmorComponent', 'FlagComponent', 'LimbLossComponent'].includes(compName)) {
-                component = new CompClass(protoData);
-            } else {
-                // Все остальные компоненты создаются по старой логике
-                const otherComp = this.createGenericComponent(compName, protoData, initialData, name);
-                if (otherComp) component = otherComp;
+            const component = this.createGenericComponent(compName, protoData, initialData, name);
+            if (component) {
+                this.world.addComponent(entityID, component);
             }
-
-            if (component) this.world.addComponent(entityID, component);
         }
 
         const dbComp = this.world.getComponent(entityID, 'DragonBonesComponent');
         if (dbComp) {
-            // --- VVV КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ VVV ---
-            // 1. Скрываем все возможные шлемы и флаг по умолчанию
+            const HELMET_SLOTS = ['cone_lowhp', 'cone_halfhp', 'cone_fullhp', 'bucket_lowhp', 'bucket_halfhp', 'bucket_fullhp'];
             HELMET_SLOTS.forEach(slot => dbComp.setAttachment(slot, null));
-            dbComp.setAttachment('slot_flag', null);
-
-            // 2. Включаем броню, только если она есть
             const armor = this.world.getComponent(entityID, 'ArmorComponent');
             if (armor) {
                 const slotName = armor.initialAttachment.split('/')[1];
                 dbComp.setAttachment(slotName, armor.initialAttachment);
             }
-            
-            // 3. Включаем флаг, только если он есть
-            const flag = this.world.getComponent(entityID, 'FlagComponent');
-            if (flag) {
-                dbComp.setAttachment(flag.flagSlot, flag.attachmentName);
-            }
-            // --- ^^^ КОНЕЦ ИСПРАВЛЕНИЯ ^^^ ---
         }
 
-        const pos = this.world.getComponent(entityID, 'PositionComponent');
-        if (pos && !this.world.getComponent(entityID, 'HitboxComponent')) {
-            this.world.addComponent(entityID, new HitboxComponent(0, 0, pos.width, pos.height));
-        }
         Debug.log(`Entity '${name}' created with ID: ${entityID}`);
         return entityID;
     }
 
+    // --- ПОЛНОСТЬЮ ВОССТАНОВЛЕННЫЙ И ИСПРАВЛЕННЫЙ МЕТОД ---
     createGenericComponent(compName, protoData, initialData, name) {
-        if (compName === 'SpriteComponent') {
-            const sprite = this.assetLoader.getImage(protoData.assetKey);
-            if (sprite) {
-                let regionData = null;
-                if (protoData.region) {
-                    const atlasKey = protoData.assetKey.includes('_img') ? protoData.assetKey.replace('_img', '_tex') : `${protoData.assetKey}_tex`;
-                    const atlasData = this.assetLoader.getJSON(atlasKey);
-                    if (atlasData) { regionData = atlasData.SubTexture.find(st => st.name === protoData.region.name); }
-                }
-                return new SpriteComponent(sprite, regionData);
-            }
-        } else if (compName === 'PositionComponent') {
-            let width = 0, height = protoData.height || 0;
-            const spriteProto = this.prototypes[name].components.SpriteComponent;
+        const CompClass = componentMap[compName];
+        if (!CompClass) {
+            Debug.warn(`Unknown component type in factory: ${compName}`);
+            return null;
+        }
+
+        if (compName === 'PositionComponent') {
+            const finalData = { ...protoData, ...initialData };
+            let width = 0, height = finalData.height || 0;
+            const spriteProto = this.prototypes[name]?.components?.SpriteComponent;
             if (spriteProto) {
                 const img = this.assetLoader.getImage(spriteProto.assetKey);
                 if (img && img.height > 0) { width = height * (img.width / img.height); }
-            } else if (this.prototypes[name].components.DragonBonesComponent) {
+            } else if (this.prototypes[name]?.components?.DragonBonesComponent) {
                 width = height * 0.75;
             }
-            return new PositionComponent(initialData.x || 0, initialData.y || 0, width, height);
-        } else if (compName === 'VelocityComponent') {
-            let vx = protoData.vx ?? 0, vy = protoData.vy ?? 0;
+            return new PositionComponent(finalData.x || 0, finalData.y || 0, width, height);
+        }
+        else if (compName === 'SpriteComponent') {
+            const sprite = this.assetLoader.getImage(protoData.assetKey);
+            if (!sprite) return null;
+            let regionData = null;
+            if (protoData.region) {
+                const atlasKey = protoData.assetKey.includes('_img') ? protoData.assetKey.replace('_img', '_tex') : `${protoData.assetKey}_tex`;
+                const atlasData = this.assetLoader.getJSON(atlasKey);
+                if (atlasData) { regionData = atlasData.SubTexture.find(st => st.name === protoData.region.name); }
+            }
+            return new SpriteComponent(sprite, regionData);
+        }
+        else if (compName === 'DragonBonesComponent') {
+            return new CompClass(this.dbFactory, protoData.skeKey, protoData.initialAnimation, protoData.scale, protoData.anchorOffsetY || 0);
+        }
+        else if (compName === 'VelocityComponent') {
+            let vx = protoData.vx ?? 0;
+            let vy = protoData.vy ?? 0;
             if (protoData.baseSpeed !== undefined) {
                 vx = protoData.baseSpeed + (Math.random() * 2 - 1) * (protoData.speedVariance || 0);
             }
             return new VelocityComponent(vx, vy);
-        } else if (compName === 'GridLocationComponent' && initialData.gridCoords) {
-            return new GridLocationComponent(initialData.gridCoords.row, initialData.gridCoords.col);
-        } else if (compName === 'ArcMovementComponent') {
-            return new ArcMovementComponent(protoData.vx, protoData.vy, protoData.gravity, protoData.targetY);
-        } else if (compName === 'HealthComponent') {
+        }
+        else if (compName === 'GridLocationComponent') {
+            return initialData.gridCoords ? new GridLocationComponent(initialData.gridCoords.row, initialData.gridCoords.col) : new GridLocationComponent();
+        }
+        else if (compName === 'HealthComponent') {
             return new HealthComponent(protoData.maxHealth);
-        } else if (compName === 'HitboxComponent') {
+        }
+        else if (compName === 'HitboxComponent') {
             return new HitboxComponent(protoData.offsetX, protoData.offsetY, protoData.width, protoData.height);
-        } else if (compName === 'ShootsProjectilesComponent') {
+        }
+        else if (compName === 'ShootsProjectilesComponent') {
             return new ShootsProjectilesComponent(protoData.projectileName, protoData.fireRate, protoData.projectileSpeed);
-        } else if (compName === 'ProjectileComponent') {
+        }
+        else if (compName === 'ProjectileComponent') {
             return new ProjectileComponent(protoData.damage);
-        } else if (compName === 'MeleeAttackComponent') {
+        }
+        else if (compName === 'MeleeAttackComponent') {
             return new MeleeAttackComponent(protoData.damage, protoData.attackRate);
-        } else if (compName === 'SunProducerComponent') {
+        }
+        else if (compName === 'SunProducerComponent') {
             return new SunProducerComponent(protoData.productionRate);
-        } else if (compName === 'CollectibleComponent') {
+        }
+        else if (compName === 'CollectibleComponent') {
             return new CollectibleComponent(this.prototypes[name].value || 0);
-        } else if (compName === 'RenderableComponent') {
+        }
+        else if (compName === 'RenderableComponent') {
             return new RenderableComponent(protoData.layer || 0);
-        } else if (compName === 'LifetimeComponent') {
+        }
+        else if (compName === 'LifetimeComponent') {
             return new LifetimeComponent(protoData.duration);
         }
-        // Для компонентов без параметров
-        const CompClass = componentMap[compName];
-        if (CompClass) return new CompClass();
-        return null;
+        else if (compName === 'ArcMovementComponent') {
+            return new ArcMovementComponent(protoData.vx, protoData.vy, protoData.gravity, protoData.targetY);
+        }
+        else if (['TextComponent', 'FadeEffectComponent', 'BounceAnimationComponent', 'ScaleAnimationComponent', 'ArmorComponent', 'FlagComponent', 'LimbLossComponent', 'TintEffectComponent', 'FillColorComponent'].includes(compName)) {
+            return new CompClass(protoData);
+        }
+        // Компоненты-маркеры (без параметров)
+        else {
+            return new CompClass();
+        }
     }
 
-    updateGrid(newGrid) { this.grid = newGrid; }
+    updateGrid(newGrid) { 
+        this.grid = newGrid; 
+    }
 }

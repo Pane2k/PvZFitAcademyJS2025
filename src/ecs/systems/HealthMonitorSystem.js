@@ -47,6 +47,11 @@ export default class HealthMonitorSystem {
             const dying = this.world.getComponent(entityId, 'DyingComponent');
             dying.timer += deltaTime;
             if (dying.timer >= dying.duration) {
+                // --- НОВОЕ ---
+                if(this.world.getComponent(entityId, 'ZombieComponent')) {
+                    eventBus.publish('zombie:defeated', { entityId });
+                }
+                // --- КОНЕЦ НОВОГО ---
                 this.world.addComponent(entityId, new RemovalComponent());
             }
         }
