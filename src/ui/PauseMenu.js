@@ -17,10 +17,12 @@ export default class PauseMenu {
         this.x = (this.vWidth - this.width) / 2;
         this.y = (this.vHeight - this.height) / 2;
 
+        // --- НОВЫЕ СВОЙСТВА ДЛЯ ПЕРЕТАСКИВАНИЯ ---
         this.isDragging = false;
         this.dragOffsetX = 0;
         this.dragOffsetY = 0;
-        this.headerHeight = 50;
+        this.headerHeight = 50; // Высота области для "захвата"
+        // ---
 
         this.elements = {
             'continueBtn': { x: 50, y: 220, width: 140, height: 50, text: 'Продолжить' },
@@ -31,46 +33,47 @@ export default class PauseMenu {
 
         this.activeSlider = null;
         
-        // --- ИЗМЕНЕНИЕ: Создаем привязанную функцию для обработчика событий ---
-        // Это нужно, чтобы 'this' внутри функции указывал на экземпляр PauseMenu.
+        // --- НОВЫЙ МЕТОД: Сохраняем привязанную функцию для корректного удаления слушателя ---
         this._boundHandleWindowBlur = this._handleWindowBlur.bind(this);
     }
 
-    // --- ИЗМЕНЕНИЕ: Модифицируем метод toggle для управления глобальным слушателем ---
     toggle(isVisible) {
         this.isVisible = isVisible;
+        // --- НОВАЯ ЛОГИКА: Добавляем/убираем слушатель расфокуса ---
         if (this.isVisible) {
-            // Когда меню появляется, начинаем слушать потерю фокуса
             window.addEventListener('blur', this._boundHandleWindowBlur);
         } else {
-            // Когда меню исчезает, прекращаем слушать, чтобы не было утечек памяти
             window.removeEventListener('blur', this._boundHandleWindowBlur);
-            this._handleWindowBlur(); // На всякий случай сбрасываем состояние
+            // Принудительно сбрасываем состояние, если меню скрыли во время перетаскивания
+            this._handleWindowBlur();
         }
     }
 
-    // --- НОВЫЙ МЕТОД: Обработчик потери фокуса окном ---
+    // --- НОВЫЙ МЕТОД: Обработчик потери фокуса ---
     _handleWindowBlur() {
-        Debug.log("Window lost focus, cancelling drag/slide.");
         this.isDragging = false;
         this.activeSlider = null;
+        Debug.log('Window lost focus, dragging stopped.');
     }
 
+    // --- ПОЛНОСТЬЮ ПЕРЕРАБОТАННЫЙ МЕТОД ОБРАБОТКИ ВВОДА ---
     handleInput(eventName, pos) {
-        if (!this.isVisible) return;
+        if (!this.isVisible && !this.isDragging && !this.activeSlider) return;
 
         const worldX = pos.x;
         const worldY = pos.y;
 
-        // --- ИЗМЕНЕНИЕ: Упрощаем имена событий в соответствии с новой системой ---
-        if (eventName === 'down') {
+        if (eventName === 'input:down') {
+            // 1. Проверяем клик по заголовку для начала перетаскивания
             if (this._isInside(worldX, worldY, this.x, this.y, this.width, this.headerHeight)) {
                 this.isDragging = true;
                 this.dragOffsetX = worldX - this.x;
                 this.dragOffsetY = worldY - this.y;
-                return;
+                Debug.log('Pause menu dragging started.');
+                return; // Выходим, чтобы не активировать другие элементы
             }
-            // ... (остальная логика нажатия на кнопки/слайдеры без изменений)
+            
+            // 2. Проверяем клик по кнопкам
             for (const key in this.elements) {
                 const el = this.elements[key];
                 if (el.text && this._isInside(worldX, worldY, this.x + el.x, this.y + el.y, el.width, el.height)) {
@@ -78,6 +81,8 @@ export default class PauseMenu {
                     return;
                 }
             }
+
+            // 3. Проверяем клик по слайдерам
             ['musicSlider', 'sfxSlider'].forEach(key => {
                  const el = this.elements[key];
                  if (this._isInside(worldX, worldY, this.x + el.x, this.y + el.y, el.width, el.height)) {
@@ -86,7 +91,7 @@ export default class PauseMenu {
                  }
             });
 
-        } else if (eventName === 'move') {
+        } else if (eventName === 'input:move') {
             if (this.isDragging) {
                 this.x = worldX - this.dragOffsetX;
                 this.y = worldY - this.dragOffsetY;
@@ -95,23 +100,23 @@ export default class PauseMenu {
                 this._updateSliderValue(worldX);
             }
 
-        } else if (eventName === 'up') {
+        } else if (eventName === 'input:up') {
+            // Сбрасываем все активные состояния при отпускании кнопки мыши
             this.isDragging = false;
             this.activeSlider = null;
         }
     }
 
     _updateSliderValue(worldX) {
-        // ... (код без изменений)
         const slider = this.activeSlider;
         if (!slider) return;
         const relativeX = worldX - (this.x + slider.x);
         slider.value = Math.max(0, Math.min(1, relativeX / slider.width));
-        Debug.log(`Slider ${slider.text} value changed to ${slider.value.toFixed(2)}`);
+        // Debug.log(`Slider ${slider.text} value changed to ${slider.value.toFixed(2)}`);
     }
 
     _onButtonClick(key) {
-        // ... (код без изменений)
+        Debug.log(`Pause menu button clicked: ${key}`);
         if (key === 'continueBtn') {
             eventBus.publish('game:resume');
         } else if (key === 'exitBtn') {
@@ -120,39 +125,24 @@ export default class PauseMenu {
     }
 
     _isInside(px, py, rx, ry, rw, rh) {
-        // ... (код без изменений)
         return px >= rx && px <= rx + rw && py >= ry && py <= ry + rh;
     }
 
     draw(renderer) {
         if (!this.isVisible) return;
 
-        // --- ИЗМЕНЕНИЕ: Этот блок полностью удален ---
-        // 1. Полупрозрачный фон на весь экран
-        // const ctx = renderer.ctx;
-        // ctx.save();
-        // ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-        // ctx.fillRect(0, 0, renderer.canvas.width, renderer.canvas.height);
-        // ctx.restore();
-        // --- КОНЕЦ УДАЛЕННОГО БЛОКА ---
-
-        // 2. Панель меню (без изменений)
         if (this.panelImage) {
             renderer.drawImage(this.panelImage, this.x, this.y, this.width, this.height);
-        } else {
-            renderer.drawRect(this.x, this.y, this.width, this.height, 'grey');
         }
 
-        // 3. Заголовок (без изменений)
         renderer.drawText("Пауза", this.x + this.width / 2, this.y + 30, '28px Arial', 'white', 'center', 'middle');
 
-        // 4. Элементы (без изменений)
         for (const key in this.elements) {
             const el = this.elements[key];
-            if (el.text && el.width && el.height) { // Кнопка
+            if (el.text && el.width && el.height) { // Это кнопка
                 if (this.buttonImage) renderer.drawImage(this.buttonImage, this.x + el.x, this.y + el.y, el.width, el.height);
                 renderer.drawText(el.text, this.x + el.x + el.width / 2, this.y + el.y + el.height / 2, '20px Arial', 'black', 'center', 'middle');
-            } else { // Слайдер
+            } else { // Это слайдер
                 renderer.drawText(el.text, this.x + el.x, this.y + el.y - 15, '18px Arial', 'white', 'left');
                 if (this.sliderBgImage) renderer.drawImage(this.sliderBgImage, this.x + el.x, this.y + el.y, el.width, el.height);
                 if (this.sliderHandleImage) {
@@ -161,6 +151,10 @@ export default class PauseMenu {
                     renderer.drawImage(this.sliderHandleImage, handleX, this.y + el.y, handleWidth, el.height);
                 }
             }
+        }
+        
+        if (Debug.showInteractables) {
+             renderer.drawRect(this.x, this.y, this.width, this.headerHeight, 'rgba(255, 0, 255, 0.5)', 2);
         }
     }
 }

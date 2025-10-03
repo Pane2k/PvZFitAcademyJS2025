@@ -34,12 +34,13 @@ import Background from "../Background.js";
 import GameOverSystem from "../../ecs/systems/GameOverSystem.js";
 import WinState from "./WinState.js";
 import LoseState from "./LoseState.js";
+import MainMenuState from "./MainMenuState.js";
 
 import PauseMenu from "../../ui/PauseMenu.js";
 import ConfirmationDialog from "../../ui/ConfirmationDialog.js";
 
 export default class GameplayState extends BaseState {
-    constructor(game) {
+     constructor(game) {
         super();
         this.game = game;
         this.hud = new HUD();
@@ -52,32 +53,46 @@ export default class GameplayState extends BaseState {
         this.resize = this.resize.bind(this);
         window.addEventListener('resize', this.resize);
         
-        // --- ИСПРАВЛЕНИЕ №1: Возвращаем правильные подписки ---
-        
-        // Глобальные события состояния игры
-        
-        
-        // --- ИСПРАВЛЕНИЕ №2: Прямая маршрутизация UI-ввода ---
-        // GameplayState сам перехватывает ввод и решает, что с ним делать,
-        // вместо того чтобы полагаться на PlayerInputSystem.
-        this.handleKeyDown = this.handleKeyDown.bind(this);
-        this.boundRouteUiInput = this.routeUiInput.bind(this);
-        
+        // --- ИСПРАВЛЕНИЕ: Сохраняем привязанные функции для корректной отписки ---
+        this.boundHandleInput = this.handleInput.bind(this);
+        this.boundHandleKeyDown = this.handleKeyDown.bind(this);
+        this.boundOnWin = () => this.game.stateManager.changeState(new WinState(this.game, this));
+        this.boundOnLose = () => this.game.stateManager.changeState(new LoseState(this.game, this));
+        this.boundOnResume = () => this.togglePause(false);
+        this.boundShowConfirm = this.showConfirmation.bind(this);
+        this.boundHideConfirm = this.hideConfirmation.bind(this);
+        // --- ИЗМЕНЕНИЕ: Создаем привязанную функцию для выхода в меню ---
+        this.boundConfirmExit = () => {
+            Debug.log("Confirmed exit. Changing to MainMenuState.");
+            this.game.stateManager.changeState(new MainMenuState(this.game));
+        };
     }
-    
-     routeUiInput(pos, eventName) { // EventBus передает данные первым аргументом
-        // Если активен диалог подтверждения, ввод идет только ему
+
+    // --- ПОЛНОСТЬЮ ПЕРЕРАБОТАННЫЙ МЕТОД-МАРШРУТИЗАТОР ВВОДА ---
+    handleInput(pos, eventName) {
         if (this.confirmationDialog && this.confirmationDialog.isVisible) {
             this.confirmationDialog.handleInput(eventName, pos);
-            return; // Прекращаем обработку
+            return; 
         }
-        // Если игра на паузе, ввод идет только меню паузы
         if (this.isPaused && this.pauseMenu) {
             this.pauseMenu.handleInput(eventName, pos);
-            return; // Прекращаем обработку
+            return;
         }
-        // Если ни одно UI окно не активно, PlayerInputSystem обработает клик,
-        // так как он подписан на 'input:down' напрямую.
+        if (!this.isPaused) {
+            if (eventName === 'input:down' && this.playerInputSystem) {
+                this.playerInputSystem.handleGameClick(pos);
+            }
+        }
+    }
+    routeUiInput(pos, eventName) { // EventBus передает данные первым аргументом
+        if (this.confirmationDialog && this.confirmationDialog.isVisible) {
+            this.confirmationDialog.handleInput(eventName, pos);
+            return;
+        }
+        if (this.isPaused && this.pauseMenu) {
+            this.pauseMenu.handleInput(eventName, pos);
+            return;
+        }
     }
 
     setupGrid() {
@@ -157,32 +172,41 @@ export default class GameplayState extends BaseState {
         this.createLawnmowers();
         this.game.world.grid = this.grid;
 
-        eventBus.subscribe('input:keydown', this.handleKeyDown.bind(this));
-        eventBus.subscribe('game:win', () => this.game.stateManager.changeState(new WinState(this.game, this)));
-        eventBus.subscribe('game:lose', () => this.game.stateManager.changeState(new LoseState(this.game, this)));
-        
-        // События от UI паузы
-        eventBus.subscribe('game:resume', () => this.togglePause(false));
-        eventBus.subscribe('ui:show_exit_confirmation', this.showConfirmation.bind(this));
-        eventBus.subscribe('ui:hide_exit_confirmation', this.hideConfirmation.bind(this));
-        eventBus.subscribe('game:confirm_exit', () => console.log("TODO: Exit to Main Menu"));
+        eventBus.subscribe('game:win', this.boundOnWin);
+        eventBus.subscribe('game:lose', this.boundOnLose);
+        eventBus.subscribe('game:resume', this.boundOnResume);
+        eventBus.subscribe('ui:show_exit_confirmation', this.boundShowConfirm);
+        eventBus.subscribe('ui:hide_exit_confirmation', this.boundHideConfirm);
+        // --- ИЗМЕНЕНИЕ: Подписываемся на событие подтверждения выхода ---
+        eventBus.subscribe('game:confirm_exit', this.boundConfirmExit);
 
-        eventBus.subscribe('input:down', this.boundRouteUiInput);
-        eventBus.subscribe('input:up', this.boundRouteUiInput);
-        eventBus.subscribe('input:move', this.boundRouteUiInput);
-        eventBus.subscribe('input:keydown', this.handleKeyDown);
+        eventBus.subscribe('input:down', this.boundHandleInput);
+        eventBus.subscribe('input:up', this.boundHandleInput);
+        eventBus.subscribe('input:move', this.boundHandleInput);
+        eventBus.subscribe('input:keydown', this.boundHandleKeyDown);
     }
 
     exit() {
-        window.removeEventListener('resize', this.resize);
-        
-        // --- ВОТ ИСПРАВЛЕНИЕ ---
-        eventBus.unsubscribe('input:down', this.boundRouteUiInput);
-        eventBus.unsubscribe('input:up', this.boundRouteUiInput);
-        eventBus.unsubscribe('input:move', this.boundRouteUiInput);
-        eventBus.unsubscribe('input:keydown', this.handleKeyDown);
-        
         Debug.log('Exiting GameplayState...');
+        window.removeEventListener('resize', this.resize);
+        this.game.gameLoop.setTimeScale(1.0);
+        // --- ИСПРАВЛЕНИЕ: Отписываемся от ТЕХ ЖЕ САМЫХ функций, что и подписывались ---
+        eventBus.unsubscribe('game:win', this.boundOnWin);
+        eventBus.unsubscribe('game:lose', this.boundOnLose);
+        eventBus.unsubscribe('game:resume', this.boundOnResume);
+        eventBus.unsubscribe('ui:show_exit_confirmation', this.boundShowConfirm);
+        eventBus.unsubscribe('ui:hide_exit_confirmation', this.boundHideConfirm);
+        eventBus.unsubscribe('game:confirm_exit', this.boundConfirmExit);
+
+        eventBus.unsubscribe('input:down', this.boundHandleInput);
+        eventBus.unsubscribe('input:up', this.boundHandleInput);
+        eventBus.unsubscribe('input:move', this.boundHandleInput);
+        eventBus.unsubscribe('input:keydown', this.boundHandleKeyDown);
+        
+        // Очищаем мир от всех сущностей и систем при выходе
+        this.game.world.systems = [];
+        this.game.world.entities.clear();
+        this.game.world.nextEntityID = 0; // Сбрасываем счетчик ID для чистого старта
     }
 
     update(deltaTime) {
@@ -227,7 +251,6 @@ export default class GameplayState extends BaseState {
     }
 
     handleKeyDown(data) {
-        // Теперь `this` здесь - это экземпляр GameplayState, и ошибки не будет.
         if (data.key.toLowerCase() === 'i') {
             this.debugOverlay.toggleVisibility();
         }
@@ -238,6 +261,7 @@ export default class GameplayState extends BaseState {
     togglePause(pauseState) {
         this.isPaused = pauseState;
         this.pauseMenu.toggle(this.isPaused);
+        // Устанавливаем timeScale в 0, чтобы полностью остановить игровую логику
         this.game.gameLoop.setTimeScale(this.isPaused ? 0.0 : 1.0);
         Debug.log(`Game paused: ${this.isPaused}`);
     }

@@ -18,22 +18,28 @@ export default class PlayerInputSystem{
         this.ghostPlantId = null
         this.cursorPlantId = null
 
-        eventBus.subscribe('input:down', this.handleClick.bind(this));
-        Debug.log('PlayerInputSystem subscribed to input:down event.');
+        // --- ИЗМЕНЕНИЕ: УДАЛЯЕМ ПРЯМУЮ ПОДПИСКУ ---
+        // eventBus.subscribe('input:down', this.handleClick.bind(this)); 
+        // Debug.log('PlayerInputSystem subscribed to input:down event.');
     }
 
-    handleClick(position) {
+    // --- ИЗМЕНЕНИЕ: Переименовываем метод для ясности ---
+    handleGameClick(position) {
         if (!this.factory || !this.grid || !this.hud) return;
         
-        if (this.game.stateManager.currentState.isPaused) {
-            return;
-        }
+        // Эта проверка больше не нужна здесь, так как GameplayState ее выполняет
+        // if (this.game.stateManager.currentState.isPaused) {
+        //     return;
+        // }
+
+        // Логика остается той же, но теперь вызывается извне
         if (this._handleClickOnUI(position)) return;
         if (this._handleClickOnCollectible(position)) return;
         if (this._handleClickOnGrid(position)) return;
     }
 
     _handleClickOnUI(position) {
+        // ... (этот метод без изменений)
         const clickedCardName = this.hud.checkClick(position.x, position.y);
         if (clickedCardName) {
             const plantData = this.factory.prototypes[clickedCardName];
@@ -57,11 +63,11 @@ export default class PlayerInputSystem{
     }
 
     _handleClickOnCollectible(position) {
+        // ... (этот метод без изменений)
         const collectibles = this.world.getEntitiesWithComponents('CollectibleComponent', 'PositionComponent');
         for (const entityID of collectibles) {
             const pos = this.world.getComponent(entityID, 'PositionComponent');
             
-            // NOTE: Проверяем клик относительно центра объекта
             const halfW = pos.width / 2;
             const halfH = pos.height / 2;
             if (position.x >= pos.x - halfW && position.x <= pos.x + halfW &&
@@ -89,6 +95,7 @@ export default class PlayerInputSystem{
     }
 
     _handleClickOnGrid(position) {
+        // ... (этот метод без изменений)
         if (!this.selectedPlant) return false;
 
         const gridCoords = this.grid.getCoords(position.x, position.y);
@@ -125,6 +132,7 @@ export default class PlayerInputSystem{
     }
 
     _createSelectionVisuals(plantName) {
+        // ... (этот метод без изменений)
         this._destroySelectionVisuals();
 
         this.ghostPlantId = this.factory.create(plantName, { x: -200, y: -200 });
@@ -162,6 +170,7 @@ export default class PlayerInputSystem{
     }
 
     _destroySelectionVisuals() {
+        // ... (этот метод без изменений)
         if (this.ghostPlantId !== null) {
             this.world.addComponent(this.ghostPlantId, new RemovalComponent());
             this.ghostPlantId = null;

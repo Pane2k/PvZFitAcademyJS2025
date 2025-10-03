@@ -1,3 +1,5 @@
+// src/ui/ConfirmationDialog.js
+
 import eventBus from "../core/EventBus.js";
 
 export default class ConfirmationDialog {
@@ -22,7 +24,9 @@ export default class ConfirmationDialog {
     }
 
     handleInput(eventName, pos) {
-        if (!this.isVisible || (eventName !== 'mousedown' && eventName !== 'touchstart')) return;
+        // --- ИЗМЕНЕНИЕ: Теперь мы слушаем 'input:down' вместо 'mousedown' ---
+        // Это гарантирует, что мы получаем событие, обработанное InputHandler и EventBus.
+        if (!this.isVisible || eventName !== 'input:down') return;
         
         for (const key in this.elements) {
             const el = this.elements[key];
