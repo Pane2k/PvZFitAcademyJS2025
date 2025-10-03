@@ -8,6 +8,7 @@ import InputHandler from '../core/InputHandler.js'
 
 import StateManager from './StateManager.js'
 import GameplayState from './states/GameplayState.js'
+import MainMenuState from './states/MainMenuState.js'
 
 import Factory from './Factory.js'
 // Системы
@@ -44,12 +45,40 @@ export default class Game{
         });
 
         await this.loadAssets()
-        this.stateManager.changeState(new GameplayState(this))
+        this.stateManager.changeState(new MainMenuState(this));
         this.gameLoop.start()
     }
     async loadAssets(){
         Debug.log('Loading assets...')
         await Promise.all([
+
+            this.assetLoader.loadImage('bg_main_menu', 'assets/images/bg_main_menu.png'),
+            // --- НОВЫЙ АССЕТ ДЛЯ ФОНА ВЫБОРА УРОВНЯ ---
+            this.assetLoader.loadImage('bg_level_select', 'assets/images/bg_level_select.png'), 
+            this.assetLoader.loadImage('btn_start_idle', 'assets/images/btn_start_idle.png'),
+            this.assetLoader.loadImage('btn_start_hover', 'assets/images/btn_start_hover.png'),
+            this.assetLoader.loadImage('btn_start_pressed', 'assets/images/btn_start_pressed.png'),
+            this.assetLoader.loadImage('btn_settings_idle', 'assets/images/btn_start_idle.png'),
+            this.assetLoader.loadImage('btn_settings_hover', 'assets/images/btn_start_hover.png'),
+            this.assetLoader.loadImage('btn_settings_pressed', 'assets/images/btn_start_pressed.png'),
+            this.assetLoader.loadImage('btn_reset_idle', 'assets/images/btn_start_idle.png'),
+            this.assetLoader.loadImage('btn_reset_hover', 'assets/images/btn_start_hover.png'),
+            this.assetLoader.loadImage('btn_reset_pressed', 'assets/images/btn_start_pressed.png'),
+            this.assetLoader.loadImage('level_card_unlocked', 'assets/images/level_card_unlocked.png'),
+            this.assetLoader.loadImage('level_card_locked', 'assets/images/level_card_locked.png'),
+            this.assetLoader.loadImage('lock_icon', 'assets/images/lock_icon.png'),
+            this.assetLoader.loadImage('level_icon_1', 'assets/images/level_icon_1.png'),
+            this.assetLoader.loadImage('level_icon_2', 'assets/images/level_icon_1.png'),
+            this.assetLoader.loadImage('level_icon_3', 'assets/images/level_icon_1.png'),
+            this.assetLoader.loadImage('level_icon_4', 'assets/images/level_icon_1.png'),
+            this.assetLoader.loadImage('level_icon_5', 'assets/images/level_icon_1.png'),
+
+            this.assetLoader.loadImage('ui_pause_panel', 'assets/images/ui_pause_panel.png'),
+            this.assetLoader.loadImage('ui_dialog_panel', 'assets/images/ui_dialog_panel.png'),
+            this.assetLoader.loadImage('ui_button_default', 'assets/images/ui_button_default.png'),
+            this.assetLoader.loadImage('ui_slider_bg', 'assets/images/ui_slider_bg.png'),
+            this.assetLoader.loadImage('ui_slider_handle', 'assets/images/ui_slider_handle.png'),
+
             this.assetLoader.loadImage('peashooter', 'assets/images/peashooter.png'),
             this.assetLoader.loadImage('sun', 'assets/images/sun.png'),
             this.assetLoader.loadImage('pea', 'assets/images/pea.png'),

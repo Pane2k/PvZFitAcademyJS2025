@@ -12,7 +12,11 @@ export default class InputHandler{
     setupListeners() {
         this.canvas.addEventListener('mousedown', (event) => {
             const pos = this.getCanvasCoordinates(event.clientX, event.clientY);
-            eventBus.publish('input:click', pos);
+            eventBus.publish('input:down', pos);
+        });
+        window.addEventListener('mouseup', (event) => {
+            const pos = this.getCanvasCoordinates(event.clientX, event.clientY);
+            eventBus.publish('input:up', pos);
         });
         this.canvas.addEventListener('mousemove', (event) => {
             const pos = this.getCanvasCoordinates(event.clientX, event.clientY);
@@ -23,8 +27,15 @@ export default class InputHandler{
             event.preventDefault();
             const touch = event.touches[0];
             const pos = this.getCanvasCoordinates(touch.clientX, touch.clientY);
-            eventBus.publish('input:click', pos);
+            eventBus.publish('input:down', pos); // <-- Изменено на 'input:down'
         }, { passive: false });
+
+        // --- НОВОЕ: touchend публикует 'input:up' ---
+        window.addEventListener('touchend', (event) => {
+            // touchend не всегда имеет clientX/Y, поэтому можем отправить пустой объект
+            // или координаты последнего касания, если они сохранены. Для нашей цели достаточно.
+            eventBus.publish('input:up', {}); 
+        });
         
         this.canvas.addEventListener('touchmove', (event) => {
             event.preventDefault();
@@ -35,6 +46,9 @@ export default class InputHandler{
     }
     setupKeyboardListeners() {
         window.addEventListener('keydown', (event) => {
+            if (event.key === ' ') {
+                event.preventDefault();
+            }
             const key = event.key.toLowerCase();
             eventBus.publish('input:keydown', { key });
 

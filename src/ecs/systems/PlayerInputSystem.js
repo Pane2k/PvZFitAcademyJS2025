@@ -18,13 +18,16 @@ export default class PlayerInputSystem{
         this.ghostPlantId = null
         this.cursorPlantId = null
 
-        eventBus.subscribe('input:click', this.handleClick.bind(this))
-        Debug.log('PlayerInputSystem subscribed to input:click event.')
+        eventBus.subscribe('input:down', this.handleClick.bind(this));
+        Debug.log('PlayerInputSystem subscribed to input:down event.');
     }
 
     handleClick(position) {
         if (!this.factory || !this.grid || !this.hud) return;
         
+        if (this.game.stateManager.currentState.isPaused) {
+            return;
+        }
         if (this._handleClickOnUI(position)) return;
         if (this._handleClickOnCollectible(position)) return;
         if (this._handleClickOnGrid(position)) return;

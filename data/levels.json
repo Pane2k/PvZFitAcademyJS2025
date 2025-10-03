@@ -1,12 +1,22 @@
 {
     "level_1": {
         "name": "Day - Front Yard",
-        "availableZombies": ["zombie_basic", "zombie_cone"],
+        "availableZombies": ["zombie_basic"],
         "waves": [
             {
                 "type": "mini",
-                "spawnPoints": 2,
+                "spawnPoints": 1,
                 "delayAfter": 15
+            },
+            {
+                "type": "mini",
+                "spawnPoints": 1,
+                "delayAfter": 25
+            },
+            {
+                "type": "mini",
+                "spawnPoints": 2,
+                "delayAfter": 25
             },
             {
                 "type": "mini",
@@ -22,6 +32,43 @@
                 "type": "huge",
                 "flagZombie": true,
                 "spawnPoints": 5,
+                "delayAfter": 0
+            }
+        ]
+    },
+    "level_2": {
+        "name": "Day - Front Yard",
+        "availableZombies": ["zombie_basic", "zombie_cone"],
+        "waves": [
+            {
+                "type": "mini",
+                "spawnPoints": 1,
+                "delayAfter": 15
+            },
+            {
+                "type": "mini",
+                "spawnPoints": 2,
+                "delayAfter": 25
+            },
+            {
+                "type": "mini",
+                "spawnPoints": 3,
+                "delayAfter": 25
+            },
+            {
+                "type": "mini",
+                "spawnPoints": 4,
+                "delayAfter": 25
+            },
+            {
+                "type": "mini",
+                "spawnPoints": 5,
+                "delayAfter": 25
+            },
+            {
+                "type": "huge",
+                "flagZombie": true,
+                "spawnPoints": 8,
                 "delayAfter": 0
             }
         ]

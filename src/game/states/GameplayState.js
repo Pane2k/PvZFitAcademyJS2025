@@ -35,6 +35,9 @@ import GameOverSystem from "../../ecs/systems/GameOverSystem.js";
 import WinState from "./WinState.js";
 import LoseState from "./LoseState.js";
 
+import PauseMenu from "../../ui/PauseMenu.js";
+import ConfirmationDialog from "../../ui/ConfirmationDialog.js";
+
 export default class GameplayState extends BaseState {
     constructor(game) {
         super();
@@ -42,11 +45,39 @@ export default class GameplayState extends BaseState {
         this.hud = new HUD();
         this.debugOverlay = new DebugOverlay();
         this.grid = null;
+        this.isPaused = false;
+        this.pauseMenu = null;
+        this.confirmationDialog = null;
+
         this.resize = this.resize.bind(this);
         window.addEventListener('resize', this.resize);
-        eventBus.subscribe('input:keydown', this.handleKeyDown.bind(this));
-        eventBus.subscribe('game:win', () => this.game.stateManager.changeState(new WinState(this.game, this)));
-        eventBus.subscribe('game:lose', () => this.game.stateManager.changeState(new LoseState(this.game, this)));
+        
+        // --- ИСПРАВЛЕНИЕ №1: Возвращаем правильные подписки ---
+        
+        // Глобальные события состояния игры
+        
+        
+        // --- ИСПРАВЛЕНИЕ №2: Прямая маршрутизация UI-ввода ---
+        // GameplayState сам перехватывает ввод и решает, что с ним делать,
+        // вместо того чтобы полагаться на PlayerInputSystem.
+        this.handleKeyDown = this.handleKeyDown.bind(this);
+        this.boundRouteUiInput = this.routeUiInput.bind(this);
+        
+    }
+    
+     routeUiInput(pos, eventName) { // EventBus передает данные первым аргументом
+        // Если активен диалог подтверждения, ввод идет только ему
+        if (this.confirmationDialog && this.confirmationDialog.isVisible) {
+            this.confirmationDialog.handleInput(eventName, pos);
+            return; // Прекращаем обработку
+        }
+        // Если игра на паузе, ввод идет только меню паузы
+        if (this.isPaused && this.pauseMenu) {
+            this.pauseMenu.handleInput(eventName, pos);
+            return; // Прекращаем обработку
+        }
+        // Если ни одно UI окно не активно, PlayerInputSystem обработает клик,
+        // так как он подписан на 'input:down' напрямую.
     }
 
     setupGrid() {
@@ -82,6 +113,12 @@ export default class GameplayState extends BaseState {
 
         this.hud.initialize(entityPrototypes, ['peashooter', 'sunflower'], this.game.assetLoader, this.game.renderer.VIRTUAL_WIDTH, this.game.renderer.VIRTUAL_HEIGHT);
         this.renderSystem = new RenderSystem(this.game.renderer, this.game.assetLoader);
+
+        this.pauseMenu = new PauseMenu(this.game.assetLoader, this.game.renderer.VIRTUAL_WIDTH, this.game.renderer.VIRTUAL_HEIGHT);
+        
+        
+        this.confirmationDialog = new ConfirmationDialog(this.game.assetLoader, this.game.renderer.VIRTUAL_WIDTH, this.game.renderer.VIRTUAL_HEIGHT);
+
         this.playerInputSystem = new PlayerInputSystem(this.game, null, this.hud);
         this.playerInputSystem.factory = this.game.factory;
         this.gridAlignmentSystem = new GridAlignmentSystem(null);
@@ -119,16 +156,40 @@ export default class GameplayState extends BaseState {
 
         this.createLawnmowers();
         this.game.world.grid = this.grid;
+
+        eventBus.subscribe('input:keydown', this.handleKeyDown.bind(this));
+        eventBus.subscribe('game:win', () => this.game.stateManager.changeState(new WinState(this.game, this)));
+        eventBus.subscribe('game:lose', () => this.game.stateManager.changeState(new LoseState(this.game, this)));
+        
+        // События от UI паузы
+        eventBus.subscribe('game:resume', () => this.togglePause(false));
+        eventBus.subscribe('ui:show_exit_confirmation', this.showConfirmation.bind(this));
+        eventBus.subscribe('ui:hide_exit_confirmation', this.hideConfirmation.bind(this));
+        eventBus.subscribe('game:confirm_exit', () => console.log("TODO: Exit to Main Menu"));
+
+        eventBus.subscribe('input:down', this.boundRouteUiInput);
+        eventBus.subscribe('input:up', this.boundRouteUiInput);
+        eventBus.subscribe('input:move', this.boundRouteUiInput);
+        eventBus.subscribe('input:keydown', this.handleKeyDown);
     }
 
     exit() {
         window.removeEventListener('resize', this.resize);
-        eventBus.listeners = {}; // Clear all event listeners on exit
+        
+        // --- ВОТ ИСПРАВЛЕНИЕ ---
+        eventBus.unsubscribe('input:down', this.boundRouteUiInput);
+        eventBus.unsubscribe('input:up', this.boundRouteUiInput);
+        eventBus.unsubscribe('input:move', this.boundRouteUiInput);
+        eventBus.unsubscribe('input:keydown', this.handleKeyDown);
+        
         Debug.log('Exiting GameplayState...');
     }
 
     update(deltaTime) {
-        this.game.world.update(deltaTime);
+        if (!this.isPaused) {
+            this.game.world.update(deltaTime);
+        }
+        // HUD и оверлей обновляются всегда
         this.hud.update(deltaTime);
         this.debugOverlay.update(deltaTime, this.game.world);
     }
@@ -148,18 +209,46 @@ export default class GameplayState extends BaseState {
     render() {
         this.game.renderer.clear('#2c3e50');
         if (this.background) this.background.drawBack(this.game.renderer);
+        
         if (this.renderSystem) {
+            // Отрисовываем игровой мир и HUD
             this.renderSystem.update(0, 99);
             const selectedPlant = this.playerInputSystem ? this.playerInputSystem.selectedPlant : null;
             this.hud.draw(this.game.renderer, selectedPlant);
             this.renderSystem.update(100, Infinity);
         }
+        
+        // --- ОТРИСОВКА UI ПОВЕРХ ВСЕГО ---
+        if (this.pauseMenu) this.pauseMenu.draw(this.game.renderer);
+        if (this.confirmationDialog) this.confirmationDialog.draw(this.game.renderer);
+        // ---
+        
         this.debugOverlay.draw(this.game.renderer);
     }
 
     handleKeyDown(data) {
+        // Теперь `this` здесь - это экземпляр GameplayState, и ошибки не будет.
         if (data.key.toLowerCase() === 'i') {
             this.debugOverlay.toggleVisibility();
         }
+        if (data.key.toLowerCase() === ' ' && (!this.confirmationDialog || !this.confirmationDialog.isVisible)) {
+            this.togglePause(!this.isPaused);
+        }
+    }
+    togglePause(pauseState) {
+        this.isPaused = pauseState;
+        this.pauseMenu.toggle(this.isPaused);
+        this.game.gameLoop.setTimeScale(this.isPaused ? 0.0 : 1.0);
+        Debug.log(`Game paused: ${this.isPaused}`);
+    }
+
+    showConfirmation() {
+        if (this.pauseMenu) this.pauseMenu.toggle(false);
+        if (this.confirmationDialog) this.confirmationDialog.toggle(true);
+    }
+
+    hideConfirmation() {
+        if (this.confirmationDialog) this.confirmationDialog.toggle(false);
+        if (this.pauseMenu) this.pauseMenu.toggle(true);
     }
 }
