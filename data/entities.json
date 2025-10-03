@@ -197,7 +197,7 @@
     },
     "trophy": {
         "components": {
-            "PositionComponent": { "height": 80 },
+            "PositionComponent": {  "height": 800 },
             "SpriteComponent": { "assetKey": "trophy" },
             "RenderableComponent": { "layer": 90 },
             "HitboxComponent": { "offsetX": 0, "offsetY": 0, "width": 80, "height": 80 },
@@ -213,11 +213,10 @@
     },
     "game_over_text": {
         "components": {
-            "PositionComponent": { "x": 640, "y": 360 },
+            "PositionComponent": { "x": 640, "y": 360, "scale": 0.0 },
             "RenderableComponent": { "layer": 95 },
             "TextComponent": { "text": "THE ZOMBIES ATE YOUR BRAINS!", "font": "60px Arial", "color": "#FF4D4D" },
-            
-            "BounceAnimationComponent": { "duration": 0.8, "targetScale": 1.0 }
+            "BounceAnimationComponent": { "duration": 0.5, "targetScale": 1.0 }
         }
     },
      "white_screen_fade": {

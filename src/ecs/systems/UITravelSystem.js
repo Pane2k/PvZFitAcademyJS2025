@@ -1,5 +1,6 @@
 import RemovalComponent from "../components/RemovalComponent.js";
 import Debug from "../../core/Debug.js";
+import VictoryTrophyComponent from "../components/VictoryTrophyComponent.js"; // <-- ИМПОРТИРУЕМ КОМПОНЕНТ-МАРКЕР
 
 export default class UITravelSystem {
     constructor() {
@@ -20,11 +21,16 @@ export default class UITravelSystem {
             const distance = Math.sqrt(dx * dx + dy * dy);
 
             // 2. Проверяем, достигли ли мы цели
-            // Если скорость за кадр больше оставшегося расстояния, считаем, что достигли
             if (distance < travel.speed * deltaTime) {
-                Debug.log(`Sun animation for ${entityId} finished.`);
-                // Просто помечаем на удаление, очки уже зачислены
-                this.world.addComponent(entityId, new RemovalComponent());
+                Debug.log(`UI travel animation for ${entityId} finished.`);
+                
+                // --- VVV ИЗМЕНЕНИЕ: Трофей не удаляем по прибытии VVV ---
+                const isTrophy = this.world.getComponent(entityId, 'VictoryTrophyComponent');
+                if (!isTrophy) {
+                    this.world.addComponent(entityId, new RemovalComponent());
+                }
+                // --- ^^^ КОНЕЦ ИЗМЕНЕНИЯ ^^^ ---
+                
                 this.world.removeComponent(entityId, 'UITravelComponent');
                 continue;
             }
@@ -35,9 +41,17 @@ export default class UITravelSystem {
             pos.x += normalizedDx * travel.speed * deltaTime;
             pos.y += normalizedDy * travel.speed * deltaTime;
 
-            // 4. Уменьшаем размер для эффекта "исчезновения"
-            pos.width *= 0.985;
-            pos.height *= 0.985;
+            // --- VVV ИЗМЕНЕНИЕ: Условное изменение размера VVV ---
+            const isTrophy = this.world.getComponent(entityId, 'VictoryTrophyComponent');
+            if (isTrophy) {
+                // Если это трофей, он увеличивается
+                pos.scale *= 1.005; 
+            } else {
+                // Если это солнце, оно уменьшается
+                pos.width *= 0.985;
+                pos.height *= 0.985;
+            }
+            // --- ^^^ КОНЕЦ ИЗМЕНЕНИЯ ^^^ ---
         }
     }
 }

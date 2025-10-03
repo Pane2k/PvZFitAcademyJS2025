@@ -32,7 +32,7 @@ import DeathLootSystem from "../../ecs/systems/DeathLootSystem.js";
 import ScaleAnimationSystem from "../../ecs/systems/ScaleAnimationSystem.js";
 import FadeEffectSystem from "../../ecs/systems/FadeEffectSystem.js";
 import VictorySystem from "../../ecs/systems/VictorySystem.js";
-
+import BounceAnimationSystem from "../../ecs/systems/BounceAnimationSystem.js";
 import Grid from "../Grid.js";
 import Factory from "../Factory.js";
 import eventBus from "../../core/EventBus.js";
@@ -60,7 +60,7 @@ export default class GameplayState extends BaseState {
         this.isPaused = false;
         this.pauseMenu = null;
         this.confirmationDialog = null;
-
+        this.waveSystem = null; 
         this.resize = this.resize.bind(this);
         window.addEventListener('resize', this.resize);
         
@@ -125,6 +125,12 @@ export default class GameplayState extends BaseState {
         const gridAreaY = V_HEIGHT * 0.15;
         const gridAreaHeight = V_HEIGHT * 0.70;
         this.grid = new Grid(gridAreaX, gridAreaY, gridAreaWidth, gridAreaHeight, 5, 9);
+        
+        // --- VVV НОВАЯ СТРОКА VVV ---
+        // Передаем созданную сетку в систему проигрыша
+        this.loseSequenceSystem.grid = this.grid;
+        // --- ^^^ КОНЕЦ НОВОЙ СТРОКИ ^^^ ---
+        
         if (this.playerInputSystem) this.playerInputSystem.grid = this.grid;
         if (this.gridAlignmentSystem) this.gridAlignmentSystem.updateGrid(this.grid);
         if (this.sunSpawningSystem) {
@@ -168,6 +174,9 @@ export default class GameplayState extends BaseState {
         
         this.background = new Background(this.game.assetLoader, this.game.renderer.VIRTUAL_WIDTH, this.game.renderer.VIRTUAL_HEIGHT, this.grid);
         
+        this.waveSystem = new WaveSystem(levelData, entityPrototypes, this.game.factory);
+        const damageSystem = new DamageSystem(this.waveSystem);
+
         this.game.world.addSystem(this.renderSystem);
         this.game.world.addSystem(this.playerInputSystem);
         this.game.world.addSystem(this.gridAlignmentSystem);
@@ -175,10 +184,10 @@ export default class GameplayState extends BaseState {
         this.game.world.addSystem(new MovementSystem());
         this.game.world.addSystem(new CleanupSystem());
         this.game.world.addSystem(new LifetimeSystem());
-        this.game.world.addSystem(new WaveSystem(levelData, entityPrototypes, this.game.factory));
+        this.game.world.addSystem(this.waveSystem); // Добавляем созданный экземпляр
         this.game.world.addSystem(new ShootingSystem(this.game.factory));
         this.game.world.addSystem(new CollisionSystem());
-        this.game.world.addSystem(new DamageSystem());
+        this.game.world.addSystem(damageSystem); // Добавляем созданный экземпляр
         this.game.world.addSystem(new BoundarySystem(this.game.renderer));
         this.game.world.addSystem(new MeleeAttackSystem());
         this.game.world.addSystem(new GameOverSystem(this.grid.offsetX - 30));
@@ -193,14 +202,14 @@ export default class GameplayState extends BaseState {
         this.game.world.addSystem(new DragonBonesSystem());
         this.game.world.addSystem(new ArmorSystem());
         this.game.world.addSystem(new HealthMonitorSystem());
-
         this.game.world.addSystem(this.cameraSystem);
         this.game.world.addSystem(this.loseSequenceSystem);
-        this.game.world.addSystem(new DeathLootSystem());
+
+        // this.game.world.addSystem(new DeathLootSystem());
         this.game.world.addSystem(new ScaleAnimationSystem());
         this.game.world.addSystem(new FadeEffectSystem());
         this.game.world.addSystem(new VictorySystem());
-
+        this.game.world.addSystem(new BounceAnimationSystem());
         this.createLawnmowers();
         this.game.world.grid = this.grid;
 
@@ -220,10 +229,19 @@ export default class GameplayState extends BaseState {
 
     exit() {
         Debug.log('Exiting GameplayState...');
+        
+        // --- VVV НОВОЕ: Явный сброс состояний систем VVV ---
+        if (this.waveSystem) {
+            this.waveSystem.reset();
+        }
         this.loseSequenceSystem.reset();
+        this.cameraSystem.reset(); // Также сбросим камеру
+        // --- ^^^ КОНЕЦ НОВОГО ^^^ ---
+
         window.removeEventListener('resize', this.resize);
         this.game.gameLoop.setTimeScale(1.0);
-        // --- ИСПРАВЛЕНИЕ: Отписываемся от ТЕХ ЖЕ САМЫХ функций, что и подписывались ---
+        
+        // ... (код отписки от событий)
         eventBus.unsubscribe('game:win', this.boundOnWin);
         eventBus.unsubscribe('game:lose', this.boundOnLose);
         eventBus.unsubscribe('game:resume', this.boundOnResume);
@@ -239,7 +257,7 @@ export default class GameplayState extends BaseState {
         // Очищаем мир от всех сущностей и систем при выходе
         this.game.world.systems = [];
         this.game.world.entities.clear();
-        this.game.world.nextEntityID = 0; // Сбрасываем счетчик ID для чистого старта
+        this.game.world.nextEntityID = 0;
     }
 
     update(deltaTime) {

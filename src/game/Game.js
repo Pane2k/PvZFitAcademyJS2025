@@ -38,7 +38,7 @@ export default class Game{
     async start(){
         eventBus.subscribe('time:toggle_speed', () => {
             if (this.gameLoop.timeScale === 1.0) {
-                this.gameLoop.setTimeScale(3.0);
+                this.gameLoop.setTimeScale(50.0);
             } else {
                 this.gameLoop.setTimeScale(1.0);
             }
@@ -84,6 +84,7 @@ export default class Game{
             this.assetLoader.loadImage('pea', 'assets/images/pea.png'),
             this.assetLoader.loadImage('sunflower', 'assets/images/sunflower.png'),
             this.assetLoader.loadImage('lawnmower', 'assets/images/lawnmower.png'),
+            this.assetLoader.loadImage('trophy', 'assets/images/trophy.png'),
             
             // --- VVV ИЗМЕНЕНИЯ ЗДЕСЬ VVV ---
             this.assetLoader.loadJSON('zombie_ske', 'assets/animations/zombie/zombie_ske.json'),

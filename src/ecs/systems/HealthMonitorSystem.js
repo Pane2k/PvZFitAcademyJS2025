@@ -1,6 +1,7 @@
 import Debug from "../../core/Debug.js";
 import DyingComponent from "../components/DyingComponent.js";
 import RemovalComponent from "../components/RemovalComponent.js";
+import eventBus from "../../core/EventBus.js"; // <--- ВОТ ИСПРАВЛЕНИЕ
 
 export default class HealthMonitorSystem {
     constructor() {
@@ -76,4 +77,4 @@ export default class HealthMonitorSystem {
             this.world.factory.create(breakEffect.spawnEntity, { x: entityPos.x, y: entityPos.y });
         }
     }
-}   
+}

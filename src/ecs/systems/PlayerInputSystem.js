@@ -1,45 +1,66 @@
 import eventBus from "../../core/EventBus.js";
 import Debug from "../../core/Debug.js";
 import RemovalComponent from "../components/RemovalComponent.js";
-import UITravelComponent from "../components/UITravelComponent.js"
-import PrefabComponent from "../components/PrefabComponent.js"
+import UITravelComponent from "../components/UITravelComponent.js";
+import PrefabComponent from "../components/PrefabComponent.js";
 import GhostPlantComponent from "../components/GhostPlantComponent.js";
-import CursorAttachmentComponent from "../components/CursorAttachmentComponent.js"
+import CursorAttachmentComponent from "../components/CursorAttachmentComponent.js";
+// --- VVV НОВЫЕ ИМПОРТЫ VVV ---
+import VictoryTrophyComponent from "../components/VictoryTrophyComponent.js";
+import HitboxComponent from "../components/HitboxComponent.js";
+// --- ^^^ КОНЕЦ ИМПОРТОВ ^^^ ---
 
-export default class PlayerInputSystem{
-    constructor(game, grid, hud){
-        this.game = game
-        this.world = null
-        this.factory = null
-        this.grid = grid
-        this.hud = hud
+export default class PlayerInputSystem {
+    constructor(game, grid, hud) {
+        this.game = game;
+        this.world = null;
+        this.factory = null;
+        this.grid = grid;
+        this.hud = hud;
 
-        this.selectedPlant = null
-        this.ghostPlantId = null
-        this.cursorPlantId = null
-
-        // --- ИЗМЕНЕНИЕ: УДАЛЯЕМ ПРЯМУЮ ПОДПИСКУ ---
-        // eventBus.subscribe('input:down', this.handleClick.bind(this)); 
-        // Debug.log('PlayerInputSystem subscribed to input:down event.');
+        this.selectedPlant = null;
+        this.ghostPlantId = null;
+        this.cursorPlantId = null;
     }
 
-    // --- ИЗМЕНЕНИЕ: Переименовываем метод для ясности ---
     handleGameClick(position) {
         if (!this.factory || !this.grid || !this.hud) return;
-        
-        // Эта проверка больше не нужна здесь, так как GameplayState ее выполняет
-        // if (this.game.stateManager.currentState.isPaused) {
-        //     return;
-        // }
 
-        // Логика остается той же, но теперь вызывается извне
         if (this._handleClickOnUI(position)) return;
         if (this._handleClickOnCollectible(position)) return;
+        if (this._handleClickOnTrophy(position)) return; // <--- НОВАЯ ПРОВЕРКА
         if (this._handleClickOnGrid(position)) return;
     }
 
-    _handleClickOnUI(position) {
-        // ... (этот метод без изменений)
+    // --- VVV НОВЫЙ МЕТОД ДЛЯ СБОРА ТРОФЕЯ VVV ---
+    _handleClickOnTrophy(position) {
+        const trophies = this.world.getEntitiesWithComponents('VictoryTrophyComponent', 'HitboxComponent');
+        for (const entityID of trophies) {
+            const pos = this.world.getComponent(entityID, 'PositionComponent');
+            const hitbox = this.world.getComponent(entityID, 'HitboxComponent');
+
+            const halfW = hitbox.width / 2;
+            const halfH = hitbox.height / 2;
+            if (position.x >= pos.x - halfW && position.x <= pos.x + halfW &&
+                position.y >= pos.y - halfH && position.y <= pos.y + halfH) {
+                
+                Debug.log(`Victory trophy (entity ${entityID}) collected by player!`);
+                
+                // Публикуем событие, чтобы VictorySystem знала, что пора начинать финал
+                eventBus.publish('trophy:collected', { entityId: entityID });
+                
+                // Убираем хитбокс, чтобы нельзя было кликнуть дважды
+                this.world.removeComponent(entityID, 'HitboxComponent');
+                
+                return true; // Прерываем дальнейшую обработку клика
+            }
+        }
+        return false;
+    }
+    // --- ^^^ КОНЕЦ НОВОГО МЕТОДА ^^^ ---
+
+    // ... (методы _handleClickOnUI, _handleClickOnCollectible, _handleClickOnGrid, _createSelectionVisuals, _destroySelectionVisuals остаются БЕЗ ИЗМЕНЕНИЙ)
+     _handleClickOnUI(position) {
         const clickedCardName = this.hud.checkClick(position.x, position.y);
         if (clickedCardName) {
             const plantData = this.factory.prototypes[clickedCardName];
@@ -61,53 +82,39 @@ export default class PlayerInputSystem{
         }
         return false;
     }
-
     _handleClickOnCollectible(position) {
-        // ... (этот метод без изменений)
         const collectibles = this.world.getEntitiesWithComponents('CollectibleComponent', 'PositionComponent');
         for (const entityID of collectibles) {
             const pos = this.world.getComponent(entityID, 'PositionComponent');
-            
             const halfW = pos.width / 2;
             const halfH = pos.height / 2;
             if (position.x >= pos.x - halfW && position.x <= pos.x + halfW &&
                 position.y >= pos.y - halfH && position.y <= pos.y + halfH) {
-                
                 Debug.log(`Collected resource (entity ${entityID})! Starting animation.`);
-                
                 const collectibleComp = this.world.getComponent(entityID, 'CollectibleComponent');
                 const resourceValue = collectibleComp.value;
-
                 eventBus.publish('sun:collected', { value: resourceValue });
-
                 const targetPos = this.hud.getSunCounterPosition();
                 this.world.addComponent(entityID, new UITravelComponent(targetPos.x, targetPos.y, 1200));
-
                 this.world.removeComponent(entityID, 'CollectibleComponent');
                 this.world.removeComponent(entityID, 'HitboxComponent');
                 this.world.removeComponent(entityID, 'GridLocationComponent');
                 this.world.removeComponent(entityID, 'LifetimeComponent');
-                
                 return true;
             }
         }
         return false;
     }
-
     _handleClickOnGrid(position) {
-        // ... (этот метод без изменений)
         if (!this.selectedPlant) return false;
-
         const gridCoords = this.grid.getCoords(position.x, position.y);
         if (gridCoords) {
             if (this.grid.isCellOccupied(gridCoords.row, gridCoords.col)) {
                 Debug.log('Cell is already occupied.');
                 return false;
             }
-
             const plantData = this.factory.prototypes[this.selectedPlant];
             const plantCost = plantData.cost || 0;
-
             if (this.hud.sunCount >= plantCost) {
                 eventBus.publish('sun:spent', { value: plantCost });
                 const entityId = this.factory.create(this.selectedPlant, { gridCoords: gridCoords });
@@ -124,17 +131,13 @@ export default class PlayerInputSystem{
             }
             return true;
         }
-        
         this.selectedPlant = null;
         this._destroySelectionVisuals();
         Debug.log('Clicked outside grid, selection cleared.');
         return true;
     }
-
     _createSelectionVisuals(plantName) {
-        // ... (этот метод без изменений)
         this._destroySelectionVisuals();
-
         this.ghostPlantId = this.factory.create(plantName, { x: -200, y: -200 });
         if (this.ghostPlantId !== null) {
             this.world.addComponent(this.ghostPlantId, new GhostPlantComponent());
@@ -145,17 +148,14 @@ export default class PlayerInputSystem{
             this.world.removeComponent(this.ghostPlantId, 'ShootsProjectilesComponent');
             this.world.removeComponent(this.ghostPlantId, 'GridLocationComponent');
         }
-
         this.cursorPlantId = this.factory.create(plantName, { x: -200, y: -200 });
         if (this.cursorPlantId !== null) {
             this.world.addComponent(this.cursorPlantId, new CursorAttachmentComponent());
-            
             const pos = this.world.getComponent(this.cursorPlantId, 'PositionComponent');
             if (pos) {
                 pos.width *= 0.8;
                 pos.height *= 0.8;
             }
-            
             const renderable = this.world.getComponent(this.cursorPlantId, 'RenderableComponent');
             if (renderable) {
                 renderable.layer = 100;
@@ -168,9 +168,7 @@ export default class PlayerInputSystem{
             this.world.removeComponent(this.cursorPlantId, 'GridLocationComponent');
         }
     }
-
     _destroySelectionVisuals() {
-        // ... (этот метод без изменений)
         if (this.ghostPlantId !== null) {
             this.world.addComponent(this.ghostPlantId, new RemovalComponent());
             this.ghostPlantId = null;

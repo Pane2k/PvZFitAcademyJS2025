@@ -1,12 +1,10 @@
 // src/game/Factory.js
-
 import Debug from "../core/Debug.js";
 import dragonBones from "../core/DragonBones.js";
-
-// (Список импортов всех компонентов остается без изменений)
 import PositionComponent from "../ecs/components/PositionComponent.js";
 import SpriteComponent from "../ecs/components/SpriteComponent.js";
 import RenderableComponent from "../ecs/components/RenderableComponent.js";
+// ... (все остальные импорты)
 import GridLocationComponent from '../ecs/components/GridLocationComponent.js';
 import VelocityComponent from "../ecs/components/VelocityComponent.js";
 import CollectibleComponent from "../ecs/components/CollectibleComponent.js";
@@ -44,6 +42,7 @@ import LeadLosingZombieComponent from "../ecs/components/LeadLosingZombieCompone
 import UITravelComponent from "../ecs/components/UITravelComponent.js";
 import FillColorComponent from "../ecs/components/FillColorComponent.js";
 
+
 const componentMap = {
     PositionComponent, SpriteComponent, RenderableComponent, GridLocationComponent,
     VelocityComponent, CollectibleComponent, LifetimeComponent, RemovalComponent,
@@ -59,7 +58,7 @@ const componentMap = {
 
 
 export default class Factory {
-    // constructor, _parseAllDragonBones, create - без изменений
+    // constructor и _parseAllDragonBones без изменений
     constructor(world, assetLoader, entityPrototypes, grid) {
         this.world = world;
         this.assetLoader = assetLoader;
@@ -112,7 +111,6 @@ export default class Factory {
         return entityID;
     }
 
-    // --- ПОЛНОСТЬЮ ВОССТАНОВЛЕННЫЙ И ИСПРАВЛЕННЫЙ МЕТОД ---
     createGenericComponent(compName, protoData, initialData, name) {
         const CompClass = componentMap[compName];
         if (!CompClass) {
@@ -122,19 +120,27 @@ export default class Factory {
 
         if (compName === 'PositionComponent') {
             const finalData = { ...protoData, ...initialData };
-            let width = 0, height = finalData.height || 0;
-            const spriteProto = this.prototypes[name]?.components?.SpriteComponent;
-            if (spriteProto) {
-                const img = this.assetLoader.getImage(spriteProto.assetKey);
-                if (img && img.height > 0) { width = height * (img.width / img.height); }
-            } else if (this.prototypes[name]?.components?.DragonBonesComponent) {
-                width = height * 0.75;
+            let width = finalData.width || 0;
+            let height = finalData.height || 0;
+            if (width === 0 || height === 0) {
+                const spriteProto = this.prototypes[name]?.components?.SpriteComponent;
+                if (spriteProto) {
+                    const img = this.assetLoader.getImage(spriteProto.assetKey);
+                    if (img && img.height > 0) {
+                        const aspectRatio = img.width / img.height;
+                        if (height) width = height * aspectRatio;
+                        else if (width) height = width / aspectRatio;
+                    }
+                }
             }
-            return new PositionComponent(finalData.x || 0, finalData.y || 0, width, height);
+            return new PositionComponent(finalData.x || 0, finalData.y || 0, width, height, finalData.scale ?? 1.0);
         }
         else if (compName === 'SpriteComponent') {
             const sprite = this.assetLoader.getImage(protoData.assetKey);
-            if (!sprite) return null;
+            if (!sprite) { 
+                Debug.warn(`Asset not found for SpriteComponent: ${protoData.assetKey}`);
+                return null;
+            }
             let regionData = null;
             if (protoData.region) {
                 const atlasKey = protoData.assetKey.includes('_img') ? protoData.assetKey.replace('_img', '_tex') : `${protoData.assetKey}_tex`;
@@ -178,9 +184,13 @@ export default class Factory {
         else if (compName === 'CollectibleComponent') {
             return new CollectibleComponent(this.prototypes[name].value || 0);
         }
+        
+        // --- VVV ВОТ ОНО, ИСПРАВЛЕНИЕ!!! VVV ---
         else if (compName === 'RenderableComponent') {
             return new RenderableComponent(protoData.layer || 0);
         }
+        // --- ^^^ КОНЕЦ ИСПРАВЛЕНИЯ ^^^ ---
+        
         else if (compName === 'LifetimeComponent') {
             return new LifetimeComponent(protoData.duration);
         }
@@ -190,7 +200,6 @@ export default class Factory {
         else if (['TextComponent', 'FadeEffectComponent', 'BounceAnimationComponent', 'ScaleAnimationComponent', 'ArmorComponent', 'FlagComponent', 'LimbLossComponent', 'TintEffectComponent', 'FillColorComponent'].includes(compName)) {
             return new CompClass(protoData);
         }
-        // Компоненты-маркеры (без параметров)
         else {
             return new CompClass();
         }
