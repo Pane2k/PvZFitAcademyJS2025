@@ -4,7 +4,7 @@ export default class AssetLoader{
     constructor(){
         this.images = new Map()
         this.jsonFiles = new Map()
-        
+        this.audioBuffers = new Map();
     }
     async loadJSON(key, path){
         try{
@@ -22,7 +22,26 @@ export default class AssetLoader{
         }
 
     }
-
+    async loadAudio(key, path, audioContext) {
+        if (!audioContext) {
+            Debug.warn(`Cannot load audio "${key}", AudioContext not provided.`);
+            return Promise.resolve();
+        }
+        try {
+            const response = await fetch(path);
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            const arrayBuffer = await response.arrayBuffer();
+            const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+            this.audioBuffers.set(key, audioBuffer);
+            Debug.log(`Audio loaded and decoded: ${key}`);
+            return audioBuffer;
+        } catch (e) {
+            Debug.error(`Failed to load audio: ${path}`, e);
+            throw e;
+        }
+    }
     loadImage(key, path){
         return new Promise((resolve, reject) => {
             const img = new Image()
@@ -43,5 +62,8 @@ export default class AssetLoader{
     }
     getJSON(key){
         return this.jsonFiles.get(key)
+    }
+    getAudioBuffer(key) {
+        return this.audioBuffers.get(key);
     }
 }

@@ -19,6 +19,7 @@ export default class HealthMonitorSystem {
 
             if (healthPercent <= limbLoss.threshold) {
                 limbLoss.isLimbLost = true;
+                eventBus.publish('limb:lost', { entityId: entityId });
                 const dbComp = this.world.getComponent(entityId, 'DragonBonesComponent');
                 
                 if (limbLoss.breakEffect && limbLoss.breakEffect.spawnEntity) {

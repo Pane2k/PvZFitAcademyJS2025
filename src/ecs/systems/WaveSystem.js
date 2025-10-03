@@ -1,6 +1,6 @@
 import Debug from "../../core/Debug.js";
 import eventBus from "../../core/EventBus.js";
-
+import soundManager from "../../core/SoundManager.js";
 export default class WaveSystem {
     constructor(levelData, entityPrototypes, factory) {
         this.world = null;
@@ -22,7 +22,7 @@ export default class WaveSystem {
         this.ANNOUNCEMENT_DURATION = 4.0; 
 
         this.isTrophyDropped = false;
-
+        this.isFirstZombieSpawned = false;
         eventBus.subscribe('game:start_lose_sequence', () => {
             Debug.log("WaveSystem: Lose sequence detected. Halting all operations.");
             this.isStopped = true;
@@ -40,6 +40,7 @@ export default class WaveSystem {
         this.isWaitingForHugeWave = false;
         this.isTrophyDropped = false;
         this.isStopped = false;
+        this.isFirstZombieSpawned = false;
         Debug.log("WaveSystem has been reset to its initial state.");
     }
     // --- ^^^ КОНЕЦ НОВОГО МЕТОДА ^^^ ---
@@ -130,6 +131,11 @@ export default class WaveSystem {
         });
     }
     spawnGroup(zombieNames) {
+        if (!this.isFirstZombieSpawned && zombieNames.length > 0) {
+            soundManager.playSoundEffect('awooga');
+            this.isFirstZombieSpawned = true;
+            Debug.log("First zombie spawned, playing 'awooga' sound.");
+        }
         const grid = this.factory.grid;
         if (!grid) return;
         const shuffledRows = Array.from({ length: grid.rows }, (_, i) => i).sort(() => Math.random() - 0.5);

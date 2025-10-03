@@ -3,6 +3,7 @@
 import GameLoop from '../core/GameLoop.js'
 import Renderer from '../core/Renderer.js'
 import AssetLoader from '../core/AssetLoader.js'
+
 import World from '../ecs/World.js'
 import InputHandler from '../core/InputHandler.js'
 
@@ -10,7 +11,7 @@ import StateManager from './StateManager.js'
 import GameplayState from './states/GameplayState.js'
 import TransitionManager from './TransitionManager.js'
 import MainMenuState from './states/MainMenuState.js'
-
+import soundManager from '../core/SoundManager.js';
 import Factory from './Factory.js'
 // Системы
 import RenderSystem from '../ecs/systems/RenderSystem.js'
@@ -46,6 +47,9 @@ export default class Game{
         });
 
         await this.loadAssets()
+        for (const [key, buffer] of this.assetLoader.audioBuffers.entries()) {
+            soundManager.addSound(key, buffer);
+        }
         this.stateManager.changeState(new MainMenuState(this));
         this.gameLoop.start()
     }
@@ -109,6 +113,62 @@ export default class Game{
 
             this.assetLoader.loadJSON('entities', 'data/entities.json'),
             this.assetLoader.loadJSON('levels', 'data/levels.json'),
+
+            // Музыкальные темы
+            this.assetLoader.loadAudio('music_pregame', 'assets/sounds/pregame_theme.mp3', soundManager.audioContext),
+            this.assetLoader.loadAudio('music_level_1', 'assets/sounds/main_theme.mp3', soundManager.audioContext),
+            this.assetLoader.loadAudio('music_level_2', 'assets/sounds/theme_1.mp3', soundManager.audioContext),
+            this.assetLoader.loadAudio('music_level_3', 'assets/sounds/theme_2.mp3', soundManager.audioContext),
+
+            // Звуки UI
+            this.assetLoader.loadAudio('ui_click', 'assets/sounds/ui_click.wav', soundManager.audioContext),
+            this.assetLoader.loadAudio('button_click', 'assets/sounds/button_click.wav', soundManager.audioContext),
+            this.assetLoader.loadAudio('pause', 'assets/sounds/pause.wav', soundManager.audioContext),
+            this.assetLoader.loadAudio('seedlift', 'assets/sounds/seedlift.wav', soundManager.audioContext),
+
+            // Звуки Игрового процесса
+            this.assetLoader.loadAudio('sun_collect', 'assets/sounds/sun_collect.wav', soundManager.audioContext),
+            this.assetLoader.loadAudio('plant_1', 'assets/sounds/plant.wav', soundManager.audioContext),
+            this.assetLoader.loadAudio('plant_2', 'assets/sounds/plant2.wav', soundManager.audioContext),
+            this.assetLoader.loadAudio('pea_hit_1', 'assets/sounds/pea_hit1.wav', soundManager.audioContext),
+            this.assetLoader.loadAudio('pea_hit_2', 'assets/sounds/pea_hit2.wav', soundManager.audioContext),
+            this.assetLoader.loadAudio('chomp_1', 'assets/sounds/chomp.wav', soundManager.audioContext),
+            this.assetLoader.loadAudio('chomp_2', 'assets/sounds/chomp2.wav', soundManager.audioContext),
+            this.assetLoader.loadAudio('chomp_soft', 'assets/sounds/chompsoft.wav', soundManager.audioContext),
+            this.assetLoader.loadAudio('bigchomp', 'assets/sounds/bigchomp.ogg', soundManager.audioContext), // Для будущих сильных атак
+            this.assetLoader.loadAudio('gulp', 'assets/sounds/gulp.wav', soundManager.audioContext),
+            this.assetLoader.loadAudio('throw_1', 'assets/sounds/throw.ogg', soundManager.audioContext), // Для катапульт
+            this.assetLoader.loadAudio('throw_2', 'assets/sounds/throw2.ogg', soundManager.audioContext),
+
+            // Звуки Зомби
+            this.assetLoader.loadAudio('zombie_groan_1', 'assets/sounds/groan1.wav', soundManager.audioContext),
+            this.assetLoader.loadAudio('zombie_groan_2', 'assets/sounds/groan2.wav', soundManager.audioContext),
+            this.assetLoader.loadAudio('zombie_groan_3', 'assets/sounds/groan3.wav', soundManager.audioContext),
+            this.assetLoader.loadAudio('zombie_groan_4', 'assets/sounds/groan4.wav', soundManager.audioContext),
+            this.assetLoader.loadAudio('zombie_groan_5', 'assets/sounds/groan5.wav', soundManager.audioContext),
+            this.assetLoader.loadAudio('zombie_groan_6', 'assets/sounds/groan6.wav', soundManager.audioContext),
+            this.assetLoader.loadAudio('zombie_falling_1', 'assets/sounds/zombie_falling_1.wav', soundManager.audioContext),
+            this.assetLoader.loadAudio('zombie_falling_2', 'assets/sounds/zombie_falling_2.wav', soundManager.audioContext),
+            this.assetLoader.loadAudio('shield_hit_1', 'assets/sounds/plastichit.ogg', soundManager.audioContext),
+            this.assetLoader.loadAudio('shield_hit_2', 'assets/sounds/plastichit2.ogg', soundManager.audioContext),
+            this.assetLoader.loadAudio('shield_hit_metal', 'assets/sounds/shieldhit.wav', soundManager.audioContext), // Для ведра
+            this.assetLoader.loadAudio('shield_hit_metal2', 'assets/sounds/shieldhit2.ogg', soundManager.audioContext),
+            // Звуки Событий
+            this.assetLoader.loadAudio('lawnmower', 'assets/sounds/lawnmower.wav', soundManager.audioContext),
+            this.assetLoader.loadAudio('explosion', 'assets/sounds/explosion.wav', soundManager.audioContext),
+            this.assetLoader.loadAudio('potato_mine', 'assets/sounds/potato_mine.wav', soundManager.audioContext),
+            this.assetLoader.loadAudio('siren', 'assets/sounds/siren.wav', soundManager.audioContext),
+            this.assetLoader.loadAudio('huge_wave', 'assets/sounds/hugewave.wav', soundManager.audioContext),
+            this.assetLoader.loadAudio('awooga', 'assets/sounds/awooga.wav', soundManager.audioContext),
+            this.assetLoader.loadAudio('buzzer', 'assets/sounds/buzzer.ogg', soundManager.audioContext), // Для будущих событий
+            this.assetLoader.loadAudio('lose_scream', 'assets/sounds/scream.ogg', soundManager.audioContext), // Для будущих событий
+            this.assetLoader.loadAudio('pea_shoot', 'assets/sounds/throw.ogg', soundManager.audioContext), // Используем throw.ogg для выстрела
+            this.assetLoader.loadAudio('error_buzz', 'assets/sounds/buzzer.ogg', soundManager.audioContext),
+            this.assetLoader.loadAudio('ready_set_plant', 'assets/sounds/readysetplant.ogg', soundManager.audioContext),
+            
+            // Джинглы
+            this.assetLoader.loadAudio('win_jingle', 'assets/sounds/win_jingle.wav', soundManager.audioContext),
+            this.assetLoader.loadAudio('lose_jingle', 'assets/sounds/lose_jingle.wav', soundManager.audioContext),
             
         ])
         

@@ -4,6 +4,7 @@ import Debug from "../../core/Debug.js";
 import eventBus from "../../core/EventBus.js";
 import GameplayState from "./GameplayState.js";
 import progressManager from "../ProgressManager.js";
+import soundManager from "../../core/SoundManager.js";
 
 export default class MainMenuState extends BaseState {
     constructor(game) {
@@ -24,6 +25,8 @@ export default class MainMenuState extends BaseState {
 
     enter() {
         Debug.log('Entering MainMenuState...');
+        soundManager.unlockAudio(); // Попытка разблокировать аудио на случай, если это первый вход
+        soundManager.playMusic('music_pregame');
         this.setupUI();
         eventBus.subscribe('input:down', this.boundHandleInputDown);
         eventBus.subscribe('input:up', this.boundHandleInputUp);
@@ -55,6 +58,9 @@ export default class MainMenuState extends BaseState {
             x: centerX, y: startY, width: btnWidth, height: btnHeight, text: "Начать игру", font: buttonFont,
             images: { idle: assetLoader.getImage('btn_start_idle'), hover: assetLoader.getImage('btn_start_hover'), pressed: assetLoader.getImage('btn_start_pressed') },
             onClick: () => {
+                // --- ВАЖНО: Разблокируем аудио при первом действии! ---
+                soundManager.playSoundEffect('ui_click');
+
                 if (!this.isTransitioning) {
                     this.targetCameraX = 1;
                     this.isTransitioning = true;
@@ -96,6 +102,7 @@ export default class MainMenuState extends BaseState {
                 isUnlocked: isUnlocked,
                 onClick: () => { 
                     if(isUnlocked) {
+                        soundManager.playSoundEffect('ui_click');
                         this.game.stateManager.changeState(new GameplayState(this.game, levelId)); 
                     }
                 }
@@ -108,6 +115,7 @@ export default class MainMenuState extends BaseState {
             x: V_WIDTH * 0.02, y: V_HEIGHT * 0.03, width: backBtnWidth, height: backBtnHeight, text: "Назад", font: `${Math.round(V_HEIGHT * 0.035)}px Arial`,
             images: { idle: assetLoader.getImage('btn_start_idle'), hover: assetLoader.getImage('btn_start_hover'), pressed: assetLoader.getImage('btn_start_pressed') },
             onClick: () => {
+                soundManager.playSoundEffect('ui_click');
                 if (!this.isTransitioning) {
                     this.targetCameraX = 0;
                     this.isTransitioning = true;

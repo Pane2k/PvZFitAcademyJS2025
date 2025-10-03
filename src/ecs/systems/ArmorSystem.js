@@ -1,5 +1,5 @@
 import Debug from "../../core/Debug.js";
-
+import eventBus from "../../core/EventBus.js";
 // Список всех возможных слотов, которые могут содержать части шлема.
 const HELMET_SLOTS = [
     'cone_lowhp', 'cone_halfhp', 'cone_fullhp',
@@ -27,6 +27,7 @@ export default class ArmorSystem {
 
             // Если броня сломана, скрываем все шлемы и удаляем компонент.
             if (armor.currentHealth <= 0) {
+                eventBus.publish('armor:broken', { entityId: entityId });
                 if (armor.breakEffect && armor.breakEffect.spawnEntity) {
                     this.spawnEffectForBone(entityId, armor.breakEffect);
                 }

@@ -2,7 +2,7 @@ import Debug from "../../core/Debug.js";
 import RemovalComponent from "../components/RemovalComponent.js";
 import VelocityComponent from "../components/VelocityComponent.js";
 import OutOfBoundsRemovalComponent from "../components/OutOfBoundsRemovalComponent.js";
-
+import eventBus from "../../core/EventBus.js";
 export default class LawnmowerSystem {
     constructor() {
         this.world = null;
@@ -48,7 +48,7 @@ export default class LawnmowerSystem {
         Debug.log(`Lawnmower ${mowerId} activated!`);
         const mowerComponent = this.world.getComponent(mowerId, 'LawnmowerComponent');
         if (mowerComponent.isActivated) return; // Двойная проверка
-
+        eventBus.publish('lawnmower:activated', { mowerId: mowerId });
         mowerComponent.isActivated = true;
         
         // Даем косилке скорость для движения вправо

@@ -3,7 +3,9 @@ import eventBus from "../../core/EventBus.js";
 import Debug from "../../core/Debug.js";
 import RemovalComponent from "../components/RemovalComponent.js";
 import LeadLosingZombieComponent from "../components/LeadLosingZombieComponent.js";
-
+import soundManager from "../../core/SoundManager.js";
+import vibrationManager from "../../core/VibrationManager.js";
+import VelocityComponent from "../components/VelocityComponent.js";
 export default class GameOverSystem {
     constructor(housePositionX) {
         this.world = null;
@@ -25,12 +27,24 @@ export default class GameOverSystem {
             if (zLeft <= this.housePositionX) {
                 Debug.log(`GAME OVER SEQUENCE: Zombie ${zombieId} reached the house.`);
                 this.isGameOverSequenceStarted = true;
-                
+
+                soundManager.stopMusic();
+                soundManager.playJingle('lose_jingle');
+                vibrationManager.vibrate([200, 100, 500]);
                 // --- НОВАЯ ЛОГИКА ---
                 eventBus.publish('game:start_lose_sequence');
                 
                 // 1. Помечаем виновника
                 this.world.addComponent(zombieId, new LeadLosingZombieComponent());
+                
+                const vel = this.world.getComponent(zombieId, 'VelocityComponent');
+                if (vel) {
+                    vel.vx *= 3; // Увеличиваем скорость в 3 раза
+                } else {
+                    // Если зомби атаковал, у него нет Velocity. Добавляем его.
+                    this.world.addComponent(zombieId, new VelocityComponent(-60, 0));
+                }
+                this.world.removeComponent(zombieId, 'AttackingComponent')
                 
                 // 2. Очищаем поле от всех остальных
                 const allEntities = Array.from(this.world.entities.keys());

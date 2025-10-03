@@ -117,8 +117,10 @@ export default class PlayerInputSystem {
             const plantCost = plantData.cost || 0;
             if (this.hud.sunCount >= plantCost) {
                 eventBus.publish('sun:spent', { value: plantCost });
+                
                 const entityId = this.factory.create(this.selectedPlant, { gridCoords: gridCoords });
                 if (entityId !== null) {
+                    eventBus.publish('plant:placed');
                     this.grid.placeEntity(gridCoords.row, gridCoords.col, entityId);
                     this.hud.startCooldown(this.selectedPlant); 
                     this.selectedPlant = null;

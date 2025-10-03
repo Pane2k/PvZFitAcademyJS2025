@@ -48,6 +48,7 @@
             "VelocityComponent": { "baseSpeed": -20, "speedVariance": 5 },
             "HitboxComponent": { "offsetX": 0, "offsetY": 0, "width": 60, "height": 60 },
             "ZombieComponent": {},
+            "RandomSoundComponent": { "baseKey": "zombie_groan", "count": 6, "minInterval": 8, "maxInterval": 15 },
             "LimbLossComponent": {
                 "threshold": 0.5,
                 "slotsToHide": ["outArm_bottom", "outArm_hand", "outArm_top"],
@@ -68,6 +69,7 @@
             "VelocityComponent": { "baseSpeed": -20, "speedVariance": 5 },
             "HitboxComponent": { "offsetX": 0, "offsetY": 0, "width": 60, "height": 60 },
             "ZombieComponent": {},
+            "RandomSoundComponent": { "baseKey": "zombie_groan", "count": 6, "minInterval": 8, "maxInterval": 15 },
             "LimbLossComponent": {
                 "threshold": 0.5,
                 "slotsToHide": ["outArm_bottom", "outArm_hand", "outArm_top"],
@@ -98,6 +100,7 @@
             "VelocityComponent": { "baseSpeed": -20, "speedVariance": 5 },
             "HitboxComponent": { "offsetX": 0, "offsetY": 0, "width": 60, "height": 60 },
             "ZombieComponent": {},
+            "RandomSoundComponent": { "baseKey": "zombie_groan", "count": 6, "minInterval": 8, "maxInterval": 15 },
             "LimbLossComponent": {
                 "threshold": 0.5,
                 "slotsToHide": ["outArm_bottom", "outArm_hand", "outArm_top"],
@@ -128,6 +131,7 @@
             "VelocityComponent": { "baseSpeed": -30, "speedVariance": 5 },
             "HitboxComponent": { "offsetX": 0, "offsetY": 0, "width": 60, "height": 60 },
             "ZombieComponent": {},
+            "RandomSoundComponent": { "baseKey": "zombie_groan", "count": 6, "minInterval": 8, "maxInterval": 15 },
             "LimbLossComponent": {
                 "threshold": 0.5,
                 "slotsToHide": ["outArm_bottom", "outArm_hand", "outArm_top"],

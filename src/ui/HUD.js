@@ -1,6 +1,6 @@
 import Debug from "../core/Debug.js"
 import eventBus from "../core/EventBus.js"
-
+import soundManager from "../core/SoundManager.js";
 export default class HUD {
     constructor(){
         this.sunCount = 50
@@ -16,6 +16,10 @@ export default class HUD {
         this.sunCounter = { x: 0, y: 0, icon: null, font: '28px Arial' };
         
         this.fillStyle = 'white'
+
+        this.introState = 'idle'; // idle -> ready -> set -> plant -> finished
+        this.introTimer = 0;
+        this.introText = '';
 
         this.progress = { current: 0, total: 1 };
         this.visualProgress = 0;
@@ -54,6 +58,16 @@ export default class HUD {
             this.announcement.state = 'fading_in';
             this.announcement.timer = 0;
         });
+    }
+    isIntroFinished() {
+        return this.introState === 'finished';
+    }
+    startIntroSequence() {
+        this.introState = 'ready';
+        this.introTimer = 0.60;
+        this.introText = 'READY?';
+        soundManager.playSoundEffect('ready_set_plant');
+        Debug.log("HUD: Intro sequence started.");
     }
     initialize(plantPrototypes, availablePlants, assetLoader, virtualWidth, virtualHeight) {
         
@@ -153,6 +167,24 @@ export default class HUD {
     }
 
     update(deltaTime) {
+        if (this.introState !== 'idle' && this.introState !== 'finished') {
+            this.introTimer -= deltaTime;
+            if (this.introTimer <= 0) {
+                if (this.introState === 'ready') {
+                    this.introState = 'set';
+                    this.introTimer = 0.7;
+                    this.introText = 'SET';
+                } else if (this.introState === 'set') {
+                    this.introState = 'plant';
+                    this.introTimer = 1.0;
+                    this.introText = 'PLANT!!!';
+                } else if (this.introState === 'plant') {
+                    this.introState = 'finished'; // Меняем на 'finished'
+                    this.introText = '';
+                    // HUD больше не управляет canPlayerInteract, он просто сообщает о своем состоянии
+                }
+            }
+        }
         // 1. Обновление таймеров перезарядки карточек
         for (const card of this.plantCards) {
             if (card.cooldownTimer > 0) {
@@ -236,8 +268,15 @@ export default class HUD {
             {
                 if (card.cooldownTimer > 0) {
                     Debug.log(`Card ${card.name} is on cooldown.`);
+                    soundManager.playSoundEffect('error_buzz', 0.5); // Звук ошибки
                     return null;
                 }
+                if (this.sunCount < card.cost) {
+                    Debug.log(`Not enough sun for ${card.name}.`);
+                    soundManager.playSoundEffect('error_buzz', 0.5); // Звук ошибки
+                    return null;
+                }
+                eventBus.publish('card:selected', { cardName: card.name });
                 Debug.log(`Clicked on plant card: ${card.name}`);
                 return card.name;
             }
@@ -263,6 +302,20 @@ export default class HUD {
 
         // 5. Отрисовка объявления 
         this.drawAnnouncement(renderer);
+        if (this.introText) {
+            const x = renderer.VIRTUAL_WIDTH / 2;
+            const y = renderer.VIRTUAL_HEIGHT / 2;
+            
+            // Размер шрифта как процент от высоты
+            const fontSize = Math.round(renderer.VIRTUAL_HEIGHT * 0.207); 
+            const font = `${fontSize}px Arial`;
+            
+            // Смещение тени как процент от высоты
+            const shadowOffset = renderer.VIRTUAL_HEIGHT * 0.003; 
+
+            renderer.drawText(this.introText, x + shadowOffset, y + shadowOffset, font, 'rgba(0,0,0,0.5)', 'center', 'middle'); 
+            renderer.drawText(this.introText, x, y, font, '#33cc33', 'center', 'middle');
+        }
     }
     drawAnnouncement(renderer) {
         if (this.announcement.state === 'idle') return;

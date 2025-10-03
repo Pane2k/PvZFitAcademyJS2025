@@ -1,4 +1,5 @@
 import Debug from "../../core/Debug.js";
+import eventBus from "../../core/EventBus.js"
 
 export default class ShootingSystem {
     constructor(factory) {
@@ -46,7 +47,7 @@ export default class ShootingSystem {
     fire(shooterId, shooterComponent) {
         const pos = this.world.getComponent(shooterId, 'PositionComponent');
         if (!pos) return;
-
+        eventBus.publish('projectile:fired', { shooterId: shooterId });
         // NOTE: Точка спавна снаряда относительно центра
         const spawnX = pos.x + pos.width * 0.3; 
         const spawnY = pos.y - pos.height * 0.3;

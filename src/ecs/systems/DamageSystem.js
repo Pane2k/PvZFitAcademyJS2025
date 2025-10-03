@@ -22,6 +22,9 @@ export default class DamageSystem {
                 const isAlreadyDead = health.currentHealth <= 0;
                 health.currentHealth -= damage;
                 if (health.currentHealth <= 0 && !isAlreadyDead) {
+                    if (this.world.getComponent(targetId, 'PlantComponent')) {
+                        eventBus.publish('plant:death', { entityId: targetId });
+                    }
                     this.initiateDeath(targetId);
                 }
             }

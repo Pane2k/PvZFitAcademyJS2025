@@ -41,7 +41,7 @@ import DropsTrophyOnDeathComponent from "../ecs/components/DropsTrophyOnDeathCom
 import LeadLosingZombieComponent from "../ecs/components/LeadLosingZombieComponent.js";
 import UITravelComponent from "../ecs/components/UITravelComponent.js";
 import FillColorComponent from "../ecs/components/FillColorComponent.js";
-
+import RandomSoundComponent from "../ecs/components/RandomSoundComponent.js";
 
 const componentMap = {
     PositionComponent, SpriteComponent, RenderableComponent, GridLocationComponent,
@@ -53,7 +53,7 @@ const componentMap = {
     CursorAttachmentComponent, DragonBonesComponent, ArmorComponent, FlagComponent,
     LimbLossComponent, DyingComponent, TextComponent, FadeEffectComponent,
     BounceAnimationComponent, ScaleAnimationComponent, VictoryTrophyComponent,
-    DropsTrophyOnDeathComponent, LeadLosingZombieComponent, UITravelComponent, FillColorComponent 
+    DropsTrophyOnDeathComponent, LeadLosingZombieComponent, UITravelComponent, FillColorComponent,RandomSoundComponent
 };
 
 
@@ -197,7 +197,7 @@ export default class Factory {
         else if (compName === 'ArcMovementComponent') {
             return new ArcMovementComponent(protoData.vx, protoData.vy, protoData.gravity, protoData.targetY);
         }
-        else if (['TextComponent', 'FadeEffectComponent', 'BounceAnimationComponent', 'ScaleAnimationComponent', 'ArmorComponent', 'FlagComponent', 'LimbLossComponent', 'TintEffectComponent', 'FillColorComponent'].includes(compName)) {
+        else if (['TextComponent', 'FadeEffectComponent', 'BounceAnimationComponent', 'ScaleAnimationComponent', 'ArmorComponent', 'FlagComponent', 'LimbLossComponent', 'TintEffectComponent', 'FillColorComponent', 'RandomSoundComponent'].includes(compName)) {
             return new CompClass(protoData);
         }
         else {
