@@ -8,6 +8,7 @@ import InputHandler from '../core/InputHandler.js'
 
 import StateManager from './StateManager.js'
 import GameplayState from './states/GameplayState.js'
+import TransitionManager from './TransitionManager.js'
 import MainMenuState from './states/MainMenuState.js'
 
 import Factory from './Factory.js'
@@ -32,7 +33,7 @@ export default class Game{
         this.inputHandler = new InputHandler(this.canvas, this.renderer)
         this.stateManager = new StateManager()
         this.factory = null
-
+        this.transitionManager = new TransitionManager(this.renderer);
         this.gameLoop = new GameLoop(this.update.bind(this), this.render.bind(this))
     }
     async start(){
@@ -116,8 +117,10 @@ export default class Game{
 
     update(deltaTime){
         this.stateManager.update(deltaTime)
+        this.transitionManager.update(deltaTime);
     }
     render(){
         this.stateManager.render()
+        this.transitionManager.render();
     }
 }

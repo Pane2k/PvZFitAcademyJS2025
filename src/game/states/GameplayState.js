@@ -60,35 +60,43 @@ export default class GameplayState extends BaseState {
         this.isPaused = false;
         this.pauseMenu = null;
         this.confirmationDialog = null;
-        this.waveSystem = null; 
+        this.waveSystem = null;
+        this.cameraSystem = null;
+        this.loseSequenceSystem = null;
+        this.victorySystem = null;
+
         this.resize = this.resize.bind(this);
         window.addEventListener('resize', this.resize);
         
-        this.cameraSystem = new CameraSystem();
-        this.loseSequenceSystem = new LoseSequenceSystem(this.cameraSystem);
-
-        // --- ИСПРАВЛЕНИЕ: Сохраняем привязанные функции для корректной отписки ---
         this.boundHandleInput = this.handleInput.bind(this);
         this.boundHandleKeyDown = this.handleKeyDown.bind(this);
         
+        // --- VVV ИЗМЕНЕНИЕ: Упрощаем колбэки VVV ---
         this.boundOnWin = () => {
-            progressManager.completeLevel(this.levelId);
-            this.game.stateManager.changeState(new MainMenuState(this.game, 1));
+            this.game.transitionManager.startTransition(() => {
+                progressManager.completeLevel(this.levelId);
+                this.game.stateManager.changeState(new MainMenuState(this.game));
+            });
         };
         this.boundOnLose = () => {
-            this.game.stateManager.changeState(new MainMenuState(this.game, 1));
+            this.game.transitionManager.startTransition(() => {
+                this.game.stateManager.changeState(new MainMenuState(this.game));
+            });
         };
         this.boundConfirmExit = () => {
-            this.game.stateManager.changeState(new MainMenuState(this.game, 1));
+            this.game.transitionManager.startTransition(() => {
+                this.game.stateManager.changeState(new MainMenuState(this.game));
+            });
         };
-        
+        // --- ^^^ КОНЕЦ ИЗМЕНЕНИЯ ^^^ ---
+
         this.boundOnResume = () => this.togglePause(false);
         this.boundShowConfirm = this.showConfirmation.bind(this);
         this.boundHideConfirm = this.hideConfirmation.bind(this);
-        
-        // Вот он, виновник. .start() не был привязан к контексту loseSequenceSystem.
-        this.boundStartLoseSeq = this.loseSequenceSystem.start.bind(this.loseSequenceSystem);
+        this.boundStartLoseSeq = null;
+        this.boundHandleTrophyCollected = null;
     }
+
 
     // --- ПОЛНОСТЬЮ ПЕРЕРАБОТАННЫЙ МЕТОД-МАРШРУТИЗАТОР ВВОДА ---
     handleInput(pos, eventName) {
@@ -149,7 +157,11 @@ export default class GameplayState extends BaseState {
     enter() {
         Debug.log('Entering GameplayState...');
         const entityPrototypes = this.game.assetLoader.getJSON('entities');
-        this.cameraSystem.reset();
+        
+        // --- 1. Создаем экземпляры систем с состоянием ---
+        this.cameraSystem = new CameraSystem();
+        this.loseSequenceSystem = new LoseSequenceSystem(this.cameraSystem);
+        this.victorySystem = new VictorySystem();
 
         const levelsData = this.game.assetLoader.getJSON('levels');
         const levelData = levelsData[`level_${this.levelId}`] || levelsData.level_1;
@@ -157,26 +169,24 @@ export default class GameplayState extends BaseState {
         this.game.factory = new Factory(this.game.world, this.game.assetLoader, entityPrototypes, null);
         this.game.world.factory = this.game.factory;
 
+        // --- 2. Инициализируем UI и служебные классы ---
         this.hud.initialize(entityPrototypes, ['peashooter', 'sunflower'], this.game.assetLoader, this.game.renderer.VIRTUAL_WIDTH, this.game.renderer.VIRTUAL_HEIGHT);
         this.renderSystem = new RenderSystem(this.game.renderer, this.game.assetLoader);
-
         this.pauseMenu = new PauseMenu(this.game.assetLoader, this.game.renderer.VIRTUAL_WIDTH, this.game.renderer.VIRTUAL_HEIGHT);
-        
-        
         this.confirmationDialog = new ConfirmationDialog(this.game.assetLoader, this.game.renderer.VIRTUAL_WIDTH, this.game.renderer.VIRTUAL_HEIGHT);
-
         this.playerInputSystem = new PlayerInputSystem(this.game, null, this.hud);
         this.playerInputSystem.factory = this.game.factory;
         this.gridAlignmentSystem = new GridAlignmentSystem(null);
         this.sunSpawningSystem = new SunSpawningSystem(null, null);
         
-        this.setupGrid(); // Grid setup must happen after factory is created, but before systems that use it are updated.
+        this.setupGrid(); // Настраиваем сетку, которая нужна многим системам
         
         this.background = new Background(this.game.assetLoader, this.game.renderer.VIRTUAL_WIDTH, this.game.renderer.VIRTUAL_HEIGHT, this.grid);
         
         this.waveSystem = new WaveSystem(levelData, entityPrototypes, this.game.factory);
         const damageSystem = new DamageSystem(this.waveSystem);
 
+        // --- 3. Добавляем все системы в игровой мир ---
         this.game.world.addSystem(this.renderSystem);
         this.game.world.addSystem(this.playerInputSystem);
         this.game.world.addSystem(this.gridAlignmentSystem);
@@ -184,10 +194,10 @@ export default class GameplayState extends BaseState {
         this.game.world.addSystem(new MovementSystem());
         this.game.world.addSystem(new CleanupSystem());
         this.game.world.addSystem(new LifetimeSystem());
-        this.game.world.addSystem(this.waveSystem); // Добавляем созданный экземпляр
+        this.game.world.addSystem(this.waveSystem);
         this.game.world.addSystem(new ShootingSystem(this.game.factory));
         this.game.world.addSystem(new CollisionSystem());
-        this.game.world.addSystem(damageSystem); // Добавляем созданный экземпляр
+        this.game.world.addSystem(damageSystem);
         this.game.world.addSystem(new BoundarySystem(this.game.renderer));
         this.game.world.addSystem(new MeleeAttackSystem());
         this.game.world.addSystem(new GameOverSystem(this.grid.offsetX - 30));
@@ -204,44 +214,67 @@ export default class GameplayState extends BaseState {
         this.game.world.addSystem(new HealthMonitorSystem());
         this.game.world.addSystem(this.cameraSystem);
         this.game.world.addSystem(this.loseSequenceSystem);
-
-        // this.game.world.addSystem(new DeathLootSystem());
         this.game.world.addSystem(new ScaleAnimationSystem());
         this.game.world.addSystem(new FadeEffectSystem());
-        this.game.world.addSystem(new VictorySystem());
+        this.game.world.addSystem(this.victorySystem);
         this.game.world.addSystem(new BounceAnimationSystem());
+
         this.createLawnmowers();
         this.game.world.grid = this.grid;
 
+        // --- 4. Создаем и привязываем все обработчики событий ---
+        this.boundOnWin = () => {
+            const onMidpoint = () => {
+                progressManager.completeLevel(this.levelId);
+                this.game.stateManager.changeState(new MainMenuState(this.game));
+            };
+            this.game.transitionManager.startTransition(onMidpoint, null);
+        };
+        this.boundOnLose = () => {
+            const onMidpoint = () => {
+                this.game.stateManager.changeState(new MainMenuState(this.game));
+            };
+            this.game.transitionManager.startTransition(onMidpoint, null);
+        };
+        this.boundConfirmExit = () => {
+            const onMidpoint = () => {
+                this.game.stateManager.changeState(new MainMenuState(this.game));
+            };
+            this.game.transitionManager.startTransition(onMidpoint, null);
+        };
+
+        this.boundStartLoseSeq = this.loseSequenceSystem.start.bind(this.loseSequenceSystem);
+        this.boundHandleTrophyCollected = this.victorySystem.handleTrophyCollected.bind(this.victorySystem);
+
+        // --- 5. Подписываемся на все необходимые события ---
         eventBus.subscribe('game:win', this.boundOnWin);
         eventBus.subscribe('game:lose', this.boundOnLose);
         eventBus.subscribe('game:resume', this.boundOnResume);
         eventBus.subscribe('ui:show_exit_confirmation', this.boundShowConfirm);
         eventBus.subscribe('ui:hide_exit_confirmation', this.boundHideConfirm);
-        // --- ИЗМЕНЕНИЕ: Подписываемся на событие подтверждения выхода ---
         eventBus.subscribe('game:confirm_exit', this.boundConfirmExit);
         eventBus.subscribe('game:start_lose_sequence', this.boundStartLoseSeq);
         eventBus.subscribe('input:down', this.boundHandleInput);
         eventBus.subscribe('input:up', this.boundHandleInput);
         eventBus.subscribe('input:move', this.boundHandleInput);
         eventBus.subscribe('input:keydown', this.boundHandleKeyDown);
+        eventBus.subscribe('trophy:collected', this.boundHandleTrophyCollected);
     }
 
     exit() {
         Debug.log('Exiting GameplayState...');
         
-        // --- VVV НОВОЕ: Явный сброс состояний систем VVV ---
-        if (this.waveSystem) {
-            this.waveSystem.reset();
-        }
-        this.loseSequenceSystem.reset();
-        this.cameraSystem.reset(); // Также сбросим камеру
-        // --- ^^^ КОНЕЦ НОВОГО ^^^ ---
+        // --- VVV ИЗМЕНЕНИЕ: УПРОЩАЕМ EXIT VVV ---
+        // Сбрасываем только состояние систем, которые НЕ очищаются с миром
+        if (this.waveSystem) this.waveSystem.reset();
+        if (this.loseSequenceSystem) this.loseSequenceSystem.reset();
+        if (this.cameraSystem) this.cameraSystem.reset();
+        if (this.victorySystem) this.victorySystem.reset();
 
         window.removeEventListener('resize', this.resize);
         this.game.gameLoop.setTimeScale(1.0);
         
-        // ... (код отписки от событий)
+        // Отписываемся от всех событий
         eventBus.unsubscribe('game:win', this.boundOnWin);
         eventBus.unsubscribe('game:lose', this.boundOnLose);
         eventBus.unsubscribe('game:resume', this.boundOnResume);
@@ -253,12 +286,15 @@ export default class GameplayState extends BaseState {
         eventBus.unsubscribe('input:up', this.boundHandleInput);
         eventBus.unsubscribe('input:move', this.boundHandleInput);
         eventBus.unsubscribe('input:keydown', this.boundHandleKeyDown);
+        eventBus.unsubscribe('trophy:collected', this.boundHandleTrophyCollected);
         
-        // Очищаем мир от всех сущностей и систем при выходе
+        // Очищаем мир ПОЛНОСТЬЮ. Сущность перехода очистится здесь же.
         this.game.world.systems = [];
         this.game.world.entities.clear();
         this.game.world.nextEntityID = 0;
+        // --- ^^^ КОНЕЦ ИЗМЕНЕНИЯ ^^^ ---
     }
+    
 
     update(deltaTime) {
         if (!this.isPaused) {

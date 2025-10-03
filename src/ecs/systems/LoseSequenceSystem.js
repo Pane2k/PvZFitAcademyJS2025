@@ -1,4 +1,3 @@
-
 import eventBus from "../../core/EventBus.js";
 import RemovalComponent from "../components/RemovalComponent.js";
 import Debug from "../../core/Debug.js";
@@ -7,7 +6,7 @@ export default class LoseSequenceSystem {
     constructor(cameraSystem) {
         this.world = null;
         this.cameraSystem = cameraSystem;
-        this.grid = null; 
+        this.grid = null;
         this.sequenceState = 'inactive'; // inactive -> setup -> wait_zombie_exit -> text_hold -> fade_out -> done
         this.timer = 0;
     }
@@ -15,8 +14,6 @@ export default class LoseSequenceSystem {
     update(deltaTime) {
         if (this.sequenceState === 'inactive' || this.sequenceState === 'done') return;
 
-        // --- VVV НОВЫЙ БЛОК ЛОГИКИ VVV ---
-        // --- Этап 1: Настройка позиции зомби ---
         if (this.sequenceState === 'setup') {
             const zombieId = this.world.getEntitiesWithComponents('LeadLosingZombieComponent')[0];
             if (!zombieId) { 
@@ -27,31 +24,27 @@ export default class LoseSequenceSystem {
             const pos = this.world.getComponent(zombieId, 'PositionComponent');
             const gridLoc = this.world.getComponent(zombieId, 'GridLocationComponent');
             
-            // Перемещаем зомби на 4-ю линию (индекс 3)
             if (this.grid && pos) {
-                const targetY = this.world.grid.getWorldPos(3, 0).y; // Получаем Y для 4-й линии
+                const targetY = this.world.grid.getWorldPos(3, 0).y;
                 pos.y = targetY;
-                if (gridLoc) gridLoc.row = 3; // Синхронизируем компонент сетки
+                if (gridLoc) gridLoc.row = 3;
             }
 
             this.sequenceState = 'wait_zombie_exit';
             Debug.log(`LoseSequence: Zombie ${zombieId} moved to row 4. Waiting for exit.`);
         }
-        // --- ^^^ КОНЕЦ НОВОГО БЛОКА ^^^ ---
 
-        // --- Этап 2: Ожидание ухода зомби ---
         if (this.sequenceState === 'wait_zombie_exit') {
             const zombieId = this.world.getEntitiesWithComponents('LeadLosingZombieComponent')[0];
             if (!zombieId) { this.startTextHold(); return; }
             
             const pos = this.world.getComponent(zombieId, 'PositionComponent');
-            if (pos.x < -pos.width) { // Скорректировано для полного ухода с экрана
+            if (pos.x < -pos.width) {
                 this.world.addComponent(zombieId, new RemovalComponent());
                 this.startTextHold();
             }
         }
         
-        // --- Этап 3: Показ текста и ожидание ---
         if (this.sequenceState === 'text_hold') {
             this.timer -= deltaTime;
             if (this.timer <= 0) {
@@ -59,19 +52,21 @@ export default class LoseSequenceSystem {
             }
         }
 
-        // --- Этап 4: Ожидание завершения фейда ---
         if (this.sequenceState === 'fade_out') {
             this.timer -= deltaTime;
             if (this.timer <= 0) {
+                // --- VVV КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ VVV ---
+                // Публикуем событие и сразу же меняем состояние на 'done',
+                // чтобы этот блок кода не выполнился снова в следующем кадре.
                 eventBus.publish('game:lose');
                 this.sequenceState = 'done';
+                // --- ^^^ КОНЕЦ ИСПРАВЛЕНИЯ ^^^ ---
             }
         }
     }
     
     startTextHold() {
-        // --- ИЗМЕНЕНИЕ: Проверяем, чтобы не запустить показ текста дважды ---
-        if (this.sequenceState === 'text_hold' || this.sequenceState === 'fade_out') return;
+        if (this.sequenceState === 'text_hold' || this.sequenceState === 'fade_out' || this.sequenceState === 'done') return;
         
         this.world.factory.create('game_over_text', {});
         this.sequenceState = 'text_hold';
@@ -80,7 +75,6 @@ export default class LoseSequenceSystem {
     }
 
     start() {
-        // --- ИЗМЕНЕНИЕ: Начальное состояние теперь 'setup' ---
         this.sequenceState = 'setup';
         Debug.log("LoseSequenceSystem started.");
     }
