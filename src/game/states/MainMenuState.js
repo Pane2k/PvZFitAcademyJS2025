@@ -153,6 +153,8 @@ export default class MainMenuState extends BaseState {
     }
 
     routeInput(eventName, pos) {
+
+        console.log(`MainMenu received input: ${eventName}`, pos);
     // 1. СНАЧАЛА проверяем самый верхний слой (меню настроек).
     if (this.settingsMenu.isVisible) {
         this.settingsMenu.handleInput(eventName, pos);

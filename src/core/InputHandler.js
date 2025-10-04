@@ -9,41 +9,63 @@ export default class InputHandler{
         this.setupKeyboardListeners();
         Debug.log('InputHandler initialized.')
     }
-    setupListeners() {
-        this.canvas.addEventListener('mousedown', (event) => {
-            const pos = this.getCanvasCoordinates(event.clientX, event.clientY);
-            eventBus.publish('input:down', pos);
-        });
-        window.addEventListener('mouseup', (event) => {
-            const pos = this.getCanvasCoordinates(event.clientX, event.clientY);
-            eventBus.publish('input:up', pos);
-        });
-        this.canvas.addEventListener('mousemove', (event) => {
-            const pos = this.getCanvasCoordinates(event.clientX, event.clientY);
-            eventBus.publish('input:move', pos);
-        });
+  setupListeners() {
+    // --- ОБРАБОТЧИКИ ДЛЯ МЫШИ ---
+    this.canvas.addEventListener('mousedown', (event) => {
+        const pos = this.getCanvasCoordinates(event.clientX, event.clientY);
+        eventBus.publish('input:down', pos);
+    });
+    // mouseup на window - это правильно, чтобы ловить отпускание вне холста
+    window.addEventListener('mouseup', (event) => {
+        const pos = this.getCanvasCoordinates(event.clientX, event.clientY);
+        eventBus.publish('input:up', pos);
+    });
+    this.canvas.addEventListener('mousemove', (event) => {
+        const pos = this.getCanvasCoordinates(event.clientX, event.clientY);
+        eventBus.publish('input:move', pos);
+    });
 
-        this.canvas.addEventListener('touchstart', (event) => {
-            event.preventDefault();
-            const touch = event.touches[0];
-            const pos = this.getCanvasCoordinates(touch.clientX, touch.clientY);
-            eventBus.publish('input:down', pos);
-        }, { passive: false });
+    // --- ОБРАБОТЧИКИ ДЛЯ СЕНСОРНОГО ВВОДА (ИСПРАВЛЕННАЯ ВЕРСИЯ) ---
+
+    // 'touchstart' эквивалентен 'mousedown'
+    this.canvas.addEventListener('touchstart', (event) => {
+        // КЛЮЧЕВОЙ МОМЕНТ: эта строка говорит браузеру не генерировать
+        // последующие события мыши (mousedown, mouseup, click).
+        event.preventDefault(); 
         
-        // --- ИСПРАВЛЕНИЕ ЗДЕСЬ: touchend теперь на CANVAS, а не на window ---
-        this.canvas.addEventListener('touchend', (event) => {
-            event.preventDefault(); // Добавлено для консистентности
-            // touchend может не иметь координат, но само событие важно
+        const touch = event.touches[0];
+        const pos = this.getCanvasCoordinates(touch.clientX, touch.clientY);
+        eventBus.publish('input:down', pos);
+    }, { passive: false });
+    
+    // 'touchend' эквивалентен 'mouseup'
+    // Вешаем на window, как и mouseup, для надежности
+    window.addEventListener('touchend', (event) => {
+        // Здесь preventDefault тоже не помешает, чтобы избежать любых побочных эффектов.
+        event.preventDefault();
+
+        // touchend может не содержать координат в `changedTouches`, если палец ушел с экрана.
+        // Поэтому отправка пустого события 'input:up' - это нормально.
+        // Однако, для единообразия, попробуем получить координаты, если они есть.
+        const touch = event.changedTouches[0];
+        // Если касание завершилось на экране, у него будут координаты
+        if (touch) {
+            const pos = this.getCanvasCoordinates(touch.clientX, touch.clientY);
+            eventBus.publish('input:up', pos);
+        } else {
+            // Если палец ушел за пределы окна, координат не будет.
             eventBus.publish('input:up', {}); 
-        }, { passive: false });
-        
-        this.canvas.addEventListener('touchmove', (event) => {
-            event.preventDefault();
-            const touch = event.touches[0];
-            const pos = this.getCanvasCoordinates(touch.clientX, touch.clientY);
-            eventBus.publish('input:move', pos);
-        }, { passive: false });
-    }
+        }
+    }, { passive: false });
+    
+    // 'touchmove' эквивалентен 'mousemove'
+    this.canvas.addEventListener('touchmove', (event) => {
+        event.preventDefault();
+        const touch = event.touches[0];
+        const pos = this.getCanvasCoordinates(touch.clientX, touch.clientY);
+        eventBus.publish('input:move', pos);
+    }, { passive: false });
+}
     setupKeyboardListeners() {
         // ... (этот метод без изменений)
         window.addEventListener('keydown', (event) => {

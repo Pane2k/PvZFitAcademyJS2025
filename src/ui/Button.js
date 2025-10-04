@@ -37,23 +37,32 @@ export default class Button {
     this.isHovered = this._isInside(localX, localY);
 
     if (this.isHovered && !wasHovered) {
-        console.log(`[Button Event] MOUSE ENTER -> "${this.text}"`);
+        // Это сообщение можно оставить для отладки
+        // console.log(`[Button Event] MOUSE ENTER -> "${this.text}"`);
     } else if (!this.isHovered && wasHovered) {
-        console.log(`[Button Event] MOUSE LEAVE -> "${this.text}"`);
+        // И это тоже
+        // console.log(`[Button Event] MOUSE LEAVE -> "${this.text}"`);
     }
 
     // VVV ИСПРАВЛЕНИЯ ЗДЕСЬ VVV
     if (eventName === 'input:down') {
-        if (this.isHovered) this.state = 'pressed';
+        if (this.isHovered) {
+            this.state = 'pressed';
+        }
     } else if (eventName === 'input:up') {
+        // Проверяем, была ли кнопка нажата И отпущена ли она над своей областью
         if (this.state === 'pressed' && this.isHovered) {
             if (this.onClick) {
                 console.log(`[Button Event] CLICK -> "${this.text}"`);
                 this.onClick();
             }
         }
+        // После отпускания всегда сбрасываем состояние
         this.state = this.isHovered ? 'hover' : 'idle';
     } else if (eventName === 'input:move') {
+        // --- КЛЮЧЕВОЕ ИЗМЕНЕНИЕ ---
+        // Мы меняем состояние на hover/idle только если кнопка НЕ нажата.
+        // Это предотвращает сброс состояния 'pressed' из-за микродвижений.
         if (this.state !== 'pressed') {
             this.state = this.isHovered ? 'hover' : 'idle';
         }
