@@ -30,36 +30,36 @@ export default class Button {
     }
 
     handleInput(eventName, pos, cameraOffsetX = 0) {
-        const localX = pos.x - cameraOffsetX;
-        const localY = pos.y;
+    const localX = pos.x - cameraOffsetX;
+    const localY = pos.y;
 
-        const wasHovered = this.isHovered;
-        this.isHovered = this._isInside(localX, localY);
+    const wasHovered = this.isHovered;
+    this.isHovered = this._isInside(localX, localY);
 
-        // --- VVV ДОБАВЛЕНО ЛОГИРОВАНИЕ VVV ---
-        if (this.isHovered && !wasHovered) {
-            console.log(`[Button Event] MOUSE ENTER -> "${this.text}"`);
-        } else if (!this.isHovered && wasHovered) {
-            console.log(`[Button Event] MOUSE LEAVE -> "${this.text}"`);
+    if (this.isHovered && !wasHovered) {
+        console.log(`[Button Event] MOUSE ENTER -> "${this.text}"`);
+    } else if (!this.isHovered && wasHovered) {
+        console.log(`[Button Event] MOUSE LEAVE -> "${this.text}"`);
+    }
+
+    // VVV ИСПРАВЛЕНИЯ ЗДЕСЬ VVV
+    if (eventName === 'input:down') {
+        if (this.isHovered) this.state = 'pressed';
+    } else if (eventName === 'input:up') {
+        if (this.state === 'pressed' && this.isHovered) {
+            if (this.onClick) {
+                console.log(`[Button Event] CLICK -> "${this.text}"`);
+                this.onClick();
+            }
         }
-        // --- ^^^ КОНЕЦ ЛОГИРОВАНИЯ ^^^ ---
-
-        if (eventName === 'down') {
-            if (this.isHovered) this.state = 'pressed';
-        } else if (eventName === 'up') {
-            if (this.state === 'pressed' && this.isHovered) {
-                if (this.onClick) {
-                    console.log(`[Button Event] CLICK -> "${this.text}"`); // Лог клика
-                    this.onClick();
-                }
-            }
+        this.state = this.isHovered ? 'hover' : 'idle';
+    } else if (eventName === 'input:move') {
+        if (this.state !== 'pressed') {
             this.state = this.isHovered ? 'hover' : 'idle';
-        } else if (eventName === 'move') {
-            if (this.state !== 'pressed') {
-                this.state = this.isHovered ? 'hover' : 'idle';
-            }
         }
     }
+    // ^^^ КОНЕЦ ИСПРАВЛЕНИЙ ^^^
+}
 
     _isInside(px, py) {
         return px >= this.x && px <= this.x + this.width &&

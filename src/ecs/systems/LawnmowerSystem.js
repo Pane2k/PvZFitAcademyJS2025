@@ -3,41 +3,82 @@ import RemovalComponent from "../components/RemovalComponent.js";
 import VelocityComponent from "../components/VelocityComponent.js";
 import OutOfBoundsRemovalComponent from "../components/OutOfBoundsRemovalComponent.js";
 import eventBus from "../../core/EventBus.js";
+import ArcMovementComponent from "../components/ArcMovementComponent.js";
+import DyingComponent from "../components/DyingComponent.js";
+// --- VVV НОВЫЙ ИМПОРТ VVV ---
+import LifetimeComponent from "../components/LifetimeComponent.js";
+
 export default class LawnmowerSystem {
-    constructor() {
+    // ... (конструктор без изменений)
+    constructor(waveSystem) {
         this.world = null;
+        this.waveSystem = waveSystem;
     }
 
     update() {
+        // ... (update до handleCollision без изменений)
         const zombies = this.world.getEntitiesWithComponents('ZombieComponent', 'PositionComponent', 'HitboxComponent');
         if (zombies.length === 0) return;
 
-        // Разделяем косилки на активные и неактивные для оптимизации
         const allMowers = this.world.getEntitiesWithComponents('LawnmowerComponent', 'PositionComponent', 'HitboxComponent');
         const inactiveMowers = allMowers.filter(id => !this.world.getComponent(id, 'LawnmowerComponent').isActivated);
         const activeMowers = allMowers.filter(id => this.world.getComponent(id, 'LawnmowerComponent').isActivated);
 
-        // 1. Проверяем активацию неактивных косилок
+        const handleCollision = (mowerId, zombieId) => {
+            const zombiePos = this.world.getComponent(zombieId, 'PositionComponent');
+            if (zombiePos) {
+                this.waveSystem.checkForVictoryCondition(zombieId, zombiePos);
+            }
+
+            eventBus.publish('zombie:run_over', { zombieId });
+
+            this.world.removeComponent(zombieId, 'VelocityComponent');
+            this.world.removeComponent(zombieId, 'HitboxComponent');
+            this.world.removeComponent(zombieId, 'MeleeAttackComponent');
+            this.world.removeComponent(zombieId, 'AttackingComponent');
+            this.world.removeComponent(zombieId, 'ArmorComponent');
+            this.world.removeComponent(zombieId, 'LimbLossComponent');
+            this.world.removeComponent(zombieId, 'RandomSoundComponent');
+
+            // --- VVV КЛЮЧЕВЫЕ ИЗМЕНЕНИЯ ЗДЕСЬ VVV ---
+            // 1. Запускаем анимацию смерти
+            this.world.addComponent(zombieId, new DyingComponent(2.5));
+
+            // 2. Запускаем движение по дуге, чтобы зомби приземлился на свою линию
+            this.world.addComponent(zombieId, new ArcMovementComponent(
+                80,       // vx: Небольшая скорость полета вправо
+                -300,     // vy: Начальная скорость вверх (подбрасываем выше)
+                1000,     // gravity: Сила притяжения
+                zombiePos.y + 0 // targetY: Приземляемся чуть ниже исходной позиции на той же линии
+            ));
+
+            // 3. Заменяем OutOfBounds на Lifetime, чтобы зомби удалился по таймеру, а не по координатам
+            
+            // --- ^^^ КОНЕЦ ИЗМЕНЕНИЙ ^^^ ---
+        };
+
+        // ... (остальной код update, activateLawnmower, checkCollision без изменений)
         if (inactiveMowers.length > 0) {
             for (const mowerId of inactiveMowers) {
                 for (const zombieId of zombies) {
                     if (this.checkCollision(mowerId, zombieId)) {
                         this.activateLawnmower(mowerId);
-                        // Зомби, который активировал косилку, тоже должен быть немедленно удален
-                        this.world.addComponent(zombieId, new RemovalComponent());
-                        break; // Одна косилка может быть активирована только раз
+                        handleCollision(mowerId, zombieId);
+                        break; 
                     }
                 }
             }
         }
 
-        // 2. Обрабатываем столкновения для уже активных косилок
         if (activeMowers.length > 0) {
             for (const mowerId of activeMowers) {
                 for (const zombieId of zombies) {
+                    // Проверяем, что зомби еще не "умирает" от другой косилки
+                    if (this.world.getComponent(zombieId, 'RemovalComponent') || this.world.getComponent(zombieId, 'DyingComponent')) continue;
+                    
                     if (this.checkCollision(mowerId, zombieId)) {
                         Debug.log(`Active lawnmower ${mowerId} destroyed zombie ${zombieId}`);
-                        this.world.addComponent(zombieId, new RemovalComponent());
+                        handleCollision(mowerId, zombieId);
                     }
                 }
             }
@@ -47,13 +88,11 @@ export default class LawnmowerSystem {
     activateLawnmower(mowerId) {
         Debug.log(`Lawnmower ${mowerId} activated!`);
         const mowerComponent = this.world.getComponent(mowerId, 'LawnmowerComponent');
-        if (mowerComponent.isActivated) return; // Двойная проверка
+        if (mowerComponent.isActivated) return;
         eventBus.publish('lawnmower:activated', { mowerId: mowerId });
         mowerComponent.isActivated = true;
         
-        // Даем косилке скорость для движения вправо
         this.world.addComponent(mowerId, new VelocityComponent(350, 0));
-        // Добавляем компонент, чтобы система очистки удалила ее за экраном
         this.world.addComponent(mowerId, new OutOfBoundsRemovalComponent());
     }
 

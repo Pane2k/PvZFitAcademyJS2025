@@ -81,8 +81,6 @@ export default class LoseSequenceSystem {
     
     startFadeOut() {
         if (this.sequenceState !== 'text_hold') return;
-
-        this.world.factory.create('white_screen_fade', {});
         this.sequenceState = 'fade_out';
         this.timer = 0.5;
         Debug.log("LoseSequence: Hold finished. Fading to white for 0.5 seconds.");

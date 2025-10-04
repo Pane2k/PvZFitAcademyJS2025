@@ -1,5 +1,5 @@
 // src/game/Game.js
-
+import LoadingState from './states/LoadingState.js'
 import GameLoop from '../core/GameLoop.js'
 import Renderer from '../core/Renderer.js'
 import AssetLoader from '../core/AssetLoader.js'
@@ -37,7 +37,7 @@ export default class Game{
         this.transitionManager = new TransitionManager(this.renderer);
         this.gameLoop = new GameLoop(this.update.bind(this), this.render.bind(this))
     }
-    async start(){
+     async start() {
         eventBus.subscribe('time:toggle_speed', () => {
             if (this.gameLoop.timeScale === 1.0) {
                 this.gameLoop.setTimeScale(50.0);
@@ -46,17 +46,29 @@ export default class Game{
             }
         });
 
-        await this.loadAssets()
-        for (const [key, buffer] of this.assetLoader.audioBuffers.entries()) {
-            soundManager.addSound(key, buffer);
+        try {
+            // Этап 1: Предзагрузка только фона для экрана загрузки
+            const loadingBg = await this.preloadLoadingScreen();
+            
+            // Этап 2: Переход в состояние загрузки с уже готовым фоном
+            this.stateManager.changeState(new LoadingState(this, loadingBg));
+            
+            this.gameLoop.start();
+
+        } catch (error) {
+            // Если даже фон загрузить не удалось, отображаем ошибку
+            Debug.error("Critical error: Could not preload loading screen.", error);
+            this.renderer.clear('black');
+            this.renderer.drawText("Не удалось загрузить базовые ресурсы.", 640, 360, "30px Arial", "red", "center");
         }
-        this.stateManager.changeState(new MainMenuState(this));
-        this.gameLoop.start()
     }
-    async loadAssets(){
+    async preloadLoadingScreen() {
+        Debug.log('Preloading loading screen background...');
+        return this.assetLoader.loadImage('bg_loading_screen', 'assets/images/bg_loading_screen.png');
+    }
+    async loadRestAssets(){
         Debug.log('Loading assets...')
         await Promise.all([
-
             this.assetLoader.loadImage('bg_main_menu', 'assets/images/bg_main_menu.png'),
             // --- НОВЫЙ АССЕТ ДЛЯ ФОНА ВЫБОРА УРОВНЯ ---
             this.assetLoader.loadImage('bg_level_select', 'assets/images/bg_level_select.png'), 

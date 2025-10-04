@@ -1,7 +1,11 @@
 import Debug from "../../core/Debug.js";
 import eventBus from "../../core/EventBus.js";
 import soundManager from "../../core/SoundManager.js";
+// --- VVV НОВЫЙ ИМПОРТ VVV ---
+import ArcMovementComponent from "../components/ArcMovementComponent.js";
+
 export default class WaveSystem {
+    // ... (конструктор и другие методы до update без изменений)
     constructor(levelData, entityPrototypes, factory) {
         this.world = null;
         this.levelData = levelData;
@@ -32,7 +36,37 @@ export default class WaveSystem {
         this.publishProgress();
     }
 
-    // --- VVV ВОТ МЕТОД, КОТОРЫЙ НУЖНО ДОБАВИТЬ VVV ---
+    // --- VVV НОВЫЙ МЕТОД ДЛЯ ПРОВЕРКИ ПОБЕДЫ И СПАВНА ТРОФЕЯ VVV ---
+    checkForVictoryCondition(defeatedZombieId, position) {
+        if (this.isTrophyDropped) return false;
+
+        const isFinalWave = this.currentWaveIndex === this.levelData.waves.length - 1;
+        if (!isFinalWave) return false;
+
+        const otherZombies = this.world.getEntitiesWithComponents('ZombieComponent')
+            .filter(id => id !== defeatedZombieId && !this.world.getComponent(id, 'DyingComponent'));
+        
+        if (otherZombies.length === 0) {
+            this.isTrophyDropped = true;
+
+            const trophyId = this.factory.create('trophy', { x: position.x, y: position.y });
+            if (trophyId !== null) {
+                // Добавляем компонент для полета по дуге НАЗАД
+                this.world.addComponent(trophyId, new ArcMovementComponent(
+                    40,       // vx: небольшая скорость вправо (покажется, что назад от зомби)
+                    -200,     // vy: начальная скорость вверх
+                    800,      // gravity: сила притяжения
+                    position.y + 0 // targetY: куда приземлиться (чуть ниже точки старта)
+                ));
+                Debug.log(`VICTORY CONDITION MET! Last zombie (${defeatedZombieId}) defeated. Spawning trophy with arc movement.`);
+            }
+            return true;
+        }
+        
+        return false;
+    }
+
+    // ... (остальные методы reset, update, setupZombiePool и т.д. без изменений)
     reset() {
         this.currentWaveIndex = -1;
         this.waveTimer = 5;
@@ -43,7 +77,6 @@ export default class WaveSystem {
         this.isFirstZombieSpawned = false;
         Debug.log("WaveSystem has been reset to its initial state.");
     }
-    // --- ^^^ КОНЕЦ НОВОГО МЕТОДА ^^^ ---
 
     update(deltaTime) {
         if (this.isStopped || !this.factory || !this.factory.grid) return;

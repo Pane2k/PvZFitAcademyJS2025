@@ -47,14 +47,11 @@ export default class GameOverSystem {
                 this.world.removeComponent(zombieId, 'AttackingComponent')
                 
                 // 2. Очищаем поле от всех остальных
-                const allEntities = Array.from(this.world.entities.keys());
-                for (const id of allEntities) {
+                const allZombies = this.world.getEntitiesWithComponents('ZombieComponent');
+                for (const id of allZombies) {
                     if (id !== zombieId) {
-                        const isUI = this.world.getComponent(id, 'UITravelComponent') || 
-                                     this.world.getComponent(id, 'CursorAttachmentComponent');
-                        if (!isUI) { // Не удаляем UI элементы
-                           this.world.addComponent(id, new RemovalComponent());
-                        }
+                        this.world.removeComponent(id, 'VelocityComponent');
+                        this.world.removeComponent(id, 'AttackingComponent');
                     }
                 }
                 

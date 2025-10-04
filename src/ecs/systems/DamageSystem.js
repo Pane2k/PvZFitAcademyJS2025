@@ -2,7 +2,8 @@ import eventBus from "../../core/EventBus.js";
 import Debug from "../../core/Debug.js";
 import RemovalComponent from "../components/RemovalComponent.js";
 import DyingComponent from "../components/DyingComponent.js";
-import ScaleAnimationComponent from "../components/ScaleAnimationComponent.js";
+// --- VVV УДАЛИТЬ НЕИСПОЛЬЗУЕМЫЙ ИМПОРТ VVV ---
+// import ScaleAnimationComponent from "../components/ScaleAnimationComponent.js";
 
 export default class DamageSystem {
     constructor(waveSystem) {
@@ -13,6 +14,7 @@ export default class DamageSystem {
     }
 
     applyDamage(targetId, damage) {
+        // ... (метод applyDamage без изменений)
         const armor = this.world.getComponent(targetId, 'ArmorComponent');
         if (armor && armor.currentHealth > 0) {
             armor.currentHealth -= damage;
@@ -34,7 +36,12 @@ export default class DamageSystem {
     initiateDeath(entityId) {
         Debug.log(`Entity ${entityId} has been defeated. Starting death sequence.`);
         
-        this.checkForLastZombie(entityId);
+        // --- VVV ИЗМЕНЕНИЕ: Теперь мы просто вызываем метод из WaveSystem VVV ---
+        const pos = this.world.getComponent(entityId, 'PositionComponent');
+        if (pos) {
+            this.waveSystem.checkForVictoryCondition(entityId, pos);
+        }
+        // --- ^^^ КОНЕЦ ИЗМЕНЕНИЯ ^^^ ---
 
         this.world.removeComponent(entityId, 'VelocityComponent');
         this.world.removeComponent(entityId, 'AttackingComponent');
@@ -43,41 +50,11 @@ export default class DamageSystem {
         
         this.world.addComponent(entityId, new DyingComponent(2.9));
     }
+    
+    // --- VVV УДАЛИТЬ ВЕСЬ МЕТОД checkForLastZombie VVV ---
+    // checkForLastZombie(defeatedZombieId) { ... }
 
-    checkForLastZombie(defeatedZombieId) {
-        if (!this.waveSystem || !this.world.getComponent(defeatedZombieId, 'ZombieComponent')) {
-            return;
-        }
-
-        const isFinalWave = this.waveSystem.currentWaveIndex === this.waveSystem.levelData.waves.length - 1;
-        
-        // --- VVV КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ VVV ---
-        // 1. Находим ВСЕХ зомби, которые еще НЕ умирают.
-        const otherZombiesOnField = this.world.getEntitiesWithComponents('ZombieComponent')
-                                        .filter(id => 
-                                            id !== defeatedZombieId && 
-                                            !this.world.getComponent(id, 'DyingComponent')
-                                        );
-
-        // 2. Условие: это финальная волна, ДРУГИХ зомби на поле не осталось (длина массива 0),
-        // и мы еще не роняли трофей.
-        if (isFinalWave && otherZombiesOnField.length === 0 && !this.waveSystem.isTrophyDropped) {
-        // --- ^^^ КОНЕЦ КЛЮЧЕВОГО ИСПРАВЛЕНИЯ ^^^ ---
-            this.waveSystem.isTrophyDropped = true;
-            const pos = this.world.getComponent(defeatedZombieId, 'PositionComponent');
-
-            if (pos) {
-                const trophyId = this.world.factory.create('trophy', { x: pos.x, y: pos.y });
-                if (trophyId !== null) {
-                    const trophyPos = this.world.getComponent(trophyId, 'PositionComponent');
-                    trophyPos.scale = 0.1;
-                    this.world.addComponent(trophyId, new ScaleAnimationComponent(1.0, 3.0));
-                    Debug.log(`DEATH BLOW! Last zombie (${defeatedZombieId}) defeated. Dropping victory trophy (${trophyId}).`);
-                }
-            }
-        }
-    }
-
+    // ... (остальные методы handleProjectileCollision, handleMeleeHit и update без изменений)
     handleProjectileCollision(data) {
         const { projectileId, targetId } = data;
         const projectile = this.world.getComponent(projectileId, 'ProjectileComponent');

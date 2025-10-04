@@ -39,9 +39,18 @@ class ProgressManager {
     }
 
     resetProgress() {
+        // 1. Сохраняем текущие настройки звука и другие.
+        const currentSettings = this.progress.settings;
+
+        // 2. Получаем чистый объект прогресса по умолчанию.
         this.progress = this.getDefaultProgress();
+
+        // 3. Возвращаем сохраненные настройки в сброшенный объект.
+        this.progress.settings = currentSettings;
+
+        // 4. Сохраняем результат.
         this.saveProgress();
-        Debug.log('Player progress has been reset.');
+        Debug.log('Player GAME progress has been reset. Settings were preserved.');
     }
     
     // --- VVV НОВЫЕ МЕТОДЫ VVV ---

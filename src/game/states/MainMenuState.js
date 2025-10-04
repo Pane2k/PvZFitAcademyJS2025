@@ -23,9 +23,9 @@ export default class MainMenuState extends BaseState {
         this.targetCameraX = 0;
         this.isTransitioning = false;
 
-        this.boundHandleInputDown = (pos) => this.routeInput('down', pos);
-        this.boundHandleInputUp = (pos) => this.routeInput('up', pos);
-        this.boundHandleInputMove = (pos) => this.routeInput('move', pos);
+        this.boundHandleInputDown = (pos) => this.routeInput('input:down', pos);
+        this.boundHandleInputUp = (pos) => this.routeInput('input:up', pos);
+        this.boundHandleInputMove = (pos) => this.routeInput('input:move', pos);
         this.boundHideSettings = () => this.settingsMenu.toggle(false);
         // --- VVV ИЗМЕНЕНИЕ: Теперь слушаем более конкретное событие VVV ---
         this.boundHideConfirm = () => this.confirmationDialog.toggle(false);
@@ -153,17 +153,16 @@ export default class MainMenuState extends BaseState {
     }
 
     routeInput(eventName, pos) {
-        // --- VVV ВОТ КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ VVV ---
-        // Эта логика теперь идентична GameplayState.
-        // Сначала проверяем самый верхний UI-слой.
-        if (this.settingsMenu.isVisible) {
-            this.settingsMenu.handleInput(eventName, pos);
-            return; // Если меню настроек видимо, ОСТАНАВЛИВАЕМ обработку здесь.
-        }
-        if (this.confirmationDialog.isVisible) {
-            this.confirmationDialog.handleInput(eventName, pos);
-            return; // Если диалог видим, ОСТАНАВЛИВАЕМ обработку здесь.
-        }
+    // 1. СНАЧАЛА проверяем самый верхний слой (меню настроек).
+    if (this.settingsMenu.isVisible) {
+        this.settingsMenu.handleInput(eventName, pos);
+        return; // <-- И немедленно выходим!
+    }
+    // 2. Затем проверяем следующий слой (диалог подтверждения).
+    if (this.confirmationDialog.isVisible) {
+        this.confirmationDialog.handleInput(eventName, pos);
+        return; // <-- И немедленно выходим!
+    }
         // --- ^^^ КОНЕЦ КЛЮЧЕВОГО ИСПРАВЛЕНИЯ ^^^ ---
 
         // Если ни один оверлей не активен, обрабатываем основные элементы.
@@ -181,7 +180,7 @@ export default class MainMenuState extends BaseState {
                 } else { // Для карточек уровней
                     const localX = pos.x - cameraOffset;
                     if (this._isInside(localX, pos.y, element.x, element.y, element.width, element.height)) {
-                        if (eventName === 'up') element.onClick();
+                        if (eventName === 'input:up') element.onClick();
                     }
                 }
             });
@@ -194,6 +193,7 @@ export default class MainMenuState extends BaseState {
     
     update(deltaTime) {
         if (this.isTransitioning) {
+            
             const speed = 0.08;
             const diff = this.targetCameraX - this.cameraX;
             if (Math.abs(diff) > 0.001) this.cameraX += diff * speed;

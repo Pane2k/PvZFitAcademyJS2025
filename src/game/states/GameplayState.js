@@ -208,7 +208,7 @@ export default class GameplayState extends BaseState {
         this.game.world.addSystem(new BoundarySystem(this.game.renderer));
         this.game.world.addSystem(new MeleeAttackSystem());
         this.game.world.addSystem(new GameOverSystem(this.grid.offsetX - 30));
-        this.game.world.addSystem(new LawnmowerSystem());
+        this.game.world.addSystem(new LawnmowerSystem(this.waveSystem));
         this.game.world.addSystem(new SunProductionSystem());
         this.game.world.addSystem(new UITravelSystem());
         this.game.world.addSystem(new ArcMovementSystem());
@@ -310,7 +310,8 @@ export default class GameplayState extends BaseState {
         };
         this.boundOnArmorOrLimbBroken = () => soundManager.playRandomSound('zombie_falling', 2);
         this.boundOnCardSelected = () => soundManager.playSoundEffect('seedlift');
-        
+        this.boundOnZombieRunOver = () => soundManager.playRandomSound('zombie_falling', 2);
+
         eventBus.subscribe('sun:collected', this.boundOnSunCollected);
         eventBus.subscribe('collision:detected', this.boundOnPeaHit);
         eventBus.subscribe('plant:placed', this.boundOnPlant);
@@ -322,6 +323,7 @@ export default class GameplayState extends BaseState {
         eventBus.subscribe('limb:lost', this.boundOnArmorOrLimbBroken);
         eventBus.subscribe('plant:death', this.boundOnPlantDeath); 
         eventBus.subscribe('card:selected', this.boundOnCardSelected);
+        eventBus.subscribe('zombie:run_over', this.boundOnZombieRunOver);
     }
 
     exit() {
@@ -362,7 +364,8 @@ export default class GameplayState extends BaseState {
         eventBus.unsubscribe('limb:lost', this.boundOnArmorOrLimbBroken);
         eventBus.unsubscribe('plant:death', this.boundOnPlantDeath);
         eventBus.unsubscribe('card:selected', this.boundOnCardSelected);
-
+        eventBus.unsubscribe('zombie:run_over', this.boundOnZombieRunOver);
+        
         this.game.world.systems = [];
         this.game.world.entities.clear();
         this.game.world.nextEntityID = 0;

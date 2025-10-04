@@ -204,7 +204,7 @@
     },
     "trophy": {
         "components": {
-            "PositionComponent": {  "height": 800 },
+            "PositionComponent": {  "height": 100 },
             "SpriteComponent": { "assetKey": "trophy" },
             "RenderableComponent": { "layer": 90 },
             "HitboxComponent": { "offsetX": 0, "offsetY": 0, "width": 80, "height": 80 },
