@@ -18,6 +18,13 @@ window.game = game
  */
 function setupFullscreenHandler() {
     const promptElement = document.getElementById('fullscreen-prompt');
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    if (isIOS) {
+        // Если это iOS, просто ничего не делаем,
+        // и приглашение никогда не появится.
+        Debug.log("iOS detected. Fullscreen prompt is disabled.");
+        return; 
+    }
     const targetElement = document.documentElement; // Весь документ
 
     if (!promptElement) return;
