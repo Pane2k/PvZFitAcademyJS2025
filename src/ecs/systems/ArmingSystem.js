@@ -24,7 +24,7 @@ export default class ArmingSystem {
                 }
                 
                 // Добавляем компоненты для взрыва и хитбокс
-                const explosionData = { damage: 1800, radius: 150 }; // Данные из entities.json
+                const explosionData = { damage: 5000, radius: 150 }; // Данные из entities.json
                 this.world.addComponent(entityId, new ExplodesOnContactComponent(explosionData));
                 this.world.addComponent(entityId, new HitboxComponent(0, 0, 60, 60));
 

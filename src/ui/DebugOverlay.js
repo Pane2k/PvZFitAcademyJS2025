@@ -4,8 +4,9 @@ export default class DebugOverlay {
         this.fps = 0;
         this.frameTime = 0;
         this.entityCount = 0; 
+        this.zombieCount = 0; // <-- 1. НОВОЕ СВОЙСТВО
     
-    // Для расчета FPS
+        // Для расчета FPS
         this.lastTime = performance.now();
         this.frameCount = 0;
     }
@@ -27,9 +28,12 @@ export default class DebugOverlay {
             this.lastTime = now;
         }
 
-        // Обновляем счетчик сущностей
         if (world) {
             this.entityCount = world.entities.size;
+            // --- 2. НАЧАЛО ИЗМЕНЕНИЙ ---
+            // Считаем количество сущностей, у которых есть ZombieComponent
+            this.zombieCount = world.getEntitiesWithComponents('ZombieComponent').length;
+            // --- КОНЕЦ ИЗМЕНЕНИЙ ---
         }
     }
 
@@ -38,8 +42,6 @@ export default class DebugOverlay {
 
         const ctx = renderer.ctx;
         const canvas = renderer.canvas;
-
-        // --- Используем физические координаты, т.к. рисуем поверх всего ---
         const physicalX = canvas.width - 10;
         
         ctx.save();
@@ -49,8 +51,13 @@ export default class DebugOverlay {
         
         ctx.fillText(`FPS: ${this.fps}`, physicalX, 20);
         ctx.fillText(`Frame Time: ${this.frameTime.toFixed(2)} ms`, physicalX, 40);
-        ctx.fillText(`Entities: ${this.entityCount}`, physicalX, 60); // <-- ОТРИСОВКА СЧЕТЧИКА
+        ctx.fillText(`Entities: ${this.entityCount}`, physicalX, 60);
+        
+        // --- 3. НАЧАЛО ИЗМЕНЕНИЙ ---
+        // Отрисовываем счетчик зомби на следующей строке
+        ctx.fillText(`Zombies: ${this.zombieCount}`, physicalX, 80);
+        // --- КОНЕЦ ИЗМЕНЕНИЙ ---
+        
         ctx.restore();
     }
-
 }

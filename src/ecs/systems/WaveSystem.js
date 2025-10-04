@@ -19,7 +19,7 @@ export default class WaveSystem {
 
         this.isCompleted = false;
         this.totalSpawnPoints = this.levelData.waves.reduce((sum, wave) => sum + wave.spawnPoints, 0);
-        this.spawnPointsSpent = 0;
+        // this.spawnPointsSpent = 0;
 
         this.isWaitingForHugeWave = false;
         this.announcementTimer = 0;
@@ -70,7 +70,7 @@ export default class WaveSystem {
     reset() {
         this.currentWaveIndex = -1;
         this.waveTimer = 5;
-        this.spawnPointsSpent = 0;
+        // this.spawnPointsSpent = 0;
         this.isWaitingForHugeWave = false;
         this.isTrophyDropped = false;
         this.isStopped = false;
@@ -93,7 +93,7 @@ export default class WaveSystem {
         this.waveTimer -= deltaTime;
         if (this.waveTimer <= 0 && this.currentWaveIndex < this.levelData.waves.length - 1) {
             this.prepareNextWave();
-        }
+        }   
     }
     
     setupZombiePool() {
@@ -108,6 +108,17 @@ export default class WaveSystem {
         this.currentWaveIndex++;
         const waveData = this.levelData.waves[this.currentWaveIndex];
         
+        // --- НАЧАЛО ИЗМЕНЕНИЙ ---
+        
+        // 1. Сначала рассчитываем, сколько очков будет потрачено в этой волне.
+        // Это нужно, чтобы обновить прогресс-бар НЕМЕДЛЕННО.
+   
+        
+        // 2. Публикуем обновленный прогресс СРАЗУ.
+        // Флажок на HUD поднимется в этот самый момент.
+        this.publishProgress();
+
+        // 3. Теперь выполняем остальную логику.
         if (waveData.type === 'huge') {
             eventBus.publish('hud:show_huge_wave_announcement');
             this.isWaitingForHugeWave = true;
@@ -115,6 +126,7 @@ export default class WaveSystem {
         } else {
             this.spawnWave(waveData);
         }
+        // --- КОНЕЦ ИЗМЕНЕНИЙ ---
     }
     spawnWave(waveData) {
         this.waveTimer = waveData.delayAfter;
@@ -122,43 +134,48 @@ export default class WaveSystem {
         let budget = waveData.spawnPoints;
         const spawnList = [];
         while (budget > 0) {
-            const affordableZombies = this.zombiePool.filter(z => z.cost <= budget);
+            const affordableZombies = this.zombiePool.filter(z => z.cost <= budget && z.name !== 'zombie_flag');
             if (affordableZombies.length === 0) break;
             const chosenZombie = affordableZombies[Math.floor(Math.random() * affordableZombies.length)];
             spawnList.push(chosenZombie.name);
             budget -= chosenZombie.cost;
-            this.spawnPointsSpent += chosenZombie.cost; 
+            // this.spawnPointsSpent += chosenZombie.cost; // <-- УДАЛИТЕ ИЛИ ЗАКОММЕНТИРУЙТЕ ЭТУ СТРОКУ
         }
         this.spawnGroup(spawnList);
-        this.publishProgress();
+        // this.publishProgress(); // <-- И ЭТУ ТОЖЕ, мы уже опубликовали прогресс
     }
+
     spawnHugeWave() {
         const waveData = this.levelData.waves[this.currentWaveIndex];
         let budget = waveData.spawnPoints;
         const spawnList = [];
         Debug.log(`--- Spawning HUGE Wave ${this.currentWaveIndex + 1} with Flag Zombie ---`, waveData);
+        
         const flagZombieProto = this.entityPrototypes['zombie_flag'];
         if (flagZombieProto && budget >= flagZombieProto.spawnCost) {
             spawnList.push('zombie_flag');
             budget -= flagZombieProto.spawnCost;
-            this.spawnPointsSpent += flagZombieProto.spawnCost;
+            // this.spawnPointsSpent += flagZombieProto.spawnCost; // <-- УДАЛИТЕ ЭТУ СТРОКУ
         }
+
         while (budget > 0) {
             const affordableZombies = this.zombiePool.filter(z => z.cost <= budget && z.name !== 'zombie_flag');
             if (affordableZombies.length === 0) break;
             const chosenZombie = affordableZombies[Math.floor(Math.random() * affordableZombies.length)];
             spawnList.push(chosenZombie.name);
             budget -= chosenZombie.cost;
-            this.spawnPointsSpent += chosenZombie.cost;
+            // this.spawnPointsSpent += chosenZombie.cost; // <-- И ЭТУ СТРОКУ
         }
         this.spawnGroup(spawnList);
-        this.publishProgress();
+        // this.publishProgress(); // <-- И ЭТУ ТОЖЕ
     }
     publishProgress() {
+        // --- ИЗМЕНЕНИЕ: Передаем номер волны, а не очки
         const hugeWaveIndices = this.levelData.waves.map((wave, index) => wave.type === 'huge' ? index : -1).filter(index => index !== -1);
         eventBus.publish('wave:progress', {
-            current: this.spawnPointsSpent,
-            total: this.totalSpawnPoints,
+            // currentWaveIndex начинается с -1, поэтому +1. 
+            // Когда первая волна (индекс 0) начнется, мы отправим "1".
+            currentWave: this.currentWaveIndex + 1,
             totalWaves: this.levelData.waves.length,
             hugeWaveIndices: hugeWaveIndices
         });

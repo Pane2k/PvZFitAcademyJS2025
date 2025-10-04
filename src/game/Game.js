@@ -40,7 +40,7 @@ export default class Game{
      async start() {
         eventBus.subscribe('time:toggle_speed', () => {
             if (this.gameLoop.timeScale === 1.0) {
-                this.gameLoop.setTimeScale(50.0);
+                this.gameLoop.setTimeScale(3.0);
             } else {
                 this.gameLoop.setTimeScale(1.0);
             }

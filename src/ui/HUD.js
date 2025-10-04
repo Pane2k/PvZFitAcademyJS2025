@@ -1,36 +1,32 @@
+// src/ui/HUD.js
+
 import Debug from "../core/Debug.js"
 import eventBus from "../core/EventBus.js"
 import soundManager from "../core/SoundManager.js";
+
 export default class HUD {
     constructor(){
-        this.sunCount = 50
-
+        this.sunCount = 50;
         this.cardBackgroundImage = null;
         this.sunIconImage = null;
         this.plantCards = []; 
         this.cardFont = '16px Arial'; 
-        this.uiPanel = {
-            x: 0, y: 0, width: 0, height: 0,
-            image: null
-        };
+        this.uiPanel = { x: 0, y: 0, width: 0, height: 0, image: null };
         this.sunCounter = { x: 0, y: 0, icon: null, font: '28px Arial' };
-        
-        this.fillStyle = 'white'
-
+        this.fillStyle = 'white';
         this.introState = 'idle'; // idle -> ready -> set -> plant -> finished
         this.introTimer = 0;
         this.introText = '';
 
-        this.progress = { current: 0, total: 1 };
+        this.progress = { currentWave: 0, totalWaves: 1, hugeWaveIndices: [] };
         this.visualProgress = 0;
         this.progressBar = {
             x: 0, y: 0, width: 0, height: 0,
-            image: null, flagImage: null, headImage: null,
-            hugeWaveIndices: [],
-            totalWaves: 0
+            image: null, flagImage: null, headImage: null
         };
-        this.progressFlags = []; // <-- Для хранения состояния флажков
-        this.announcement = { // <-- Для хранения состояния объявления
+        this.progressFlags = [];
+
+        this.announcement = {
             text: "A Huge Wave is Approaching!",
             alpha: 0,
             timer: 0,
@@ -39,15 +35,11 @@ export default class HUD {
             HOLD_TIME: 2.0
         };
 
-
-        // Подписываемся на событие прогресса
+        // Теперь обработчик просто сохраняет последние данные о прогрессе.
         eventBus.subscribe('wave:progress', (data) => {
             this.progress = data;
-            // "Ленивая" инициализация флажков при получении первых данных
-            if (this.progressFlags.length === 0 && data.hugeWaveIndices.length > 0) {
-                this._initializeFlags(data);
-            }
         });
+
         eventBus.subscribe('sun:collected', (data) => {
             this.sunCount += data.value;
         });
@@ -59,9 +51,11 @@ export default class HUD {
             this.announcement.timer = 0;
         });
     }
+
     isIntroFinished() {
         return this.introState === 'finished';
     }
+
     startIntroSequence() {
         this.introState = 'ready';
         this.introTimer = 0.60;
@@ -69,34 +63,29 @@ export default class HUD {
         soundManager.playSoundEffect('ready_set_plant');
         Debug.log("HUD: Intro sequence started.");
     }
-    initialize(plantPrototypes, availablePlants, assetLoader, virtualWidth, virtualHeight) {
-        
 
+    initialize(plantPrototypes, availablePlants, assetLoader, virtualWidth, virtualHeight) {
         this.uiPanel.image = assetLoader.getImage('ui_panel');
         this.sunCounter.icon = assetLoader.getImage('sun');
-        this.cardBackgroundImage = assetLoader.getImage('card_background'); // <-- Добавить
+        this.cardBackgroundImage = assetLoader.getImage('card_background');
         this.sunIconImage = assetLoader.getImage('sun_icon');
 
         const panelHeight = 110;
         this.uiPanel.height = panelHeight;
-        this.uiPanel.y = 0; // Прижимаем к верху
+        this.uiPanel.y = 0;
 
-        // 2. Настройка счетчика солнца
         const sunCounterWidth = 100;
         this.sunCounter.font = `${Math.round(panelHeight * 0.28)}px Arial`;
         
-        // 3. Настройка карточек
         const cardWidth = 75;
         const cardHeight = 90;
         this.cardFont = `${Math.round(cardHeight * 0.17)}px Arial`;
         const cardSpacing = 10;
         const cardsTotalWidth = availablePlants.length * (cardWidth + cardSpacing);
 
-        // Общая ширина панели = счетчик + карточки + отступы
         this.uiPanel.width = sunCounterWidth + cardsTotalWidth + 20;
-        this.uiPanel.x = 10; // Небольшой отступ слева
+        this.uiPanel.x = 10;
 
-        // 4. Расчет позиций элементов ВНУТРИ панели
         this.sunCounter.x = this.uiPanel.x + 50;
         this.sunCounter.y = this.uiPanel.y + panelHeight / 2 + 15;
         
@@ -119,46 +108,30 @@ export default class HUD {
             currentX += cardWidth + cardSpacing;
         }
 
-        // Расчеты ProgressBar
         this.progressBar.image = assetLoader.getImage('ui_progress_bar');
         this.progressBar.flagImage = assetLoader.getImage('ui_progress_flag');
         this.progressBar.headImage = assetLoader.getImage('ui_zombie_head');
         
         this.progressBar.height = virtualHeight * 0.05;
         this.progressBar.width = virtualWidth * 0.25;
-        this.progressBar.x = virtualWidth - this.progressBar.width - 20; // Справа с отступом
-        this.progressBar.y = virtualHeight - this.progressBar.height - 10; // Внизу с отступом
+        this.progressBar.x = virtualWidth - this.progressBar.width - 20;
+        this.progressBar.y = virtualHeight - this.progressBar.height - 10;
 
+        // Очищаем флажки при инициализации нового уровня
         this.progressFlags = [];
-        const hugeWaveIndices = this.progress.hugeWaveIndices || [];
+    }
+
+    _initializeFlags() {
         const totalWaves = this.progress.totalWaves || 1;
+        const hugeWaveIndices = this.progress.hugeWaveIndices || [];
 
         const flagRestingY = this.progressBar.y - this.progressBar.height * 0.4;
-        
-        for (const waveIndex of hugeWaveIndices) {
-            this.progressFlags.push({
-                progress: (waveIndex + 1) / totalWaves,
-                state: 'resting', // 'resting', 'raising', 'raised'
-                currentY: flagRestingY,
-                restingY: flagRestingY,
-                raisedY: this.progressBar.y - this.progressBar.height * 0.8,
-            });
-        }
-    }
-    _initializeFlags(waveData) {
-        this.progressFlags = [];
-        const totalWaves = waveData.totalWaves || 1;
-
-        // Y-координата флажка, когда он "лежит" на прогресс-баре
-        const flagRestingY = this.progressBar.y + (this.progressBar.height - (this.progressBar.height * 0.8)) / 2;
-        // Y-координата, когда он поднят
         const flagRaisedY = this.progressBar.y - this.progressBar.height * 0.8;
 
-        for (const waveIndex of waveData.hugeWaveIndices) {
+        for (const waveIndex of hugeWaveIndices) {
             this.progressFlags.push({
-                // Прогресс, на котором флажок должен подняться
-                triggerProgress: (waveIndex + 1) / totalWaves,
-                state: 'resting', // 'resting', 'raising', 'raised'
+                triggerWaveIndex: waveIndex,
+                state: 'resting',
                 currentY: flagRestingY,
                 raisedY: flagRaisedY,
             });
@@ -167,6 +140,12 @@ export default class HUD {
     }
 
     update(deltaTime) {
+        // Ленивая инициализация флажков. Сработает один раз за уровень.
+        if (this.progress.hugeWaveIndices.length > 0 && this.progressFlags.length === 0) {
+            this._initializeFlags();
+        }
+
+        // Обновление интро
         if (this.introState !== 'idle' && this.introState !== 'finished') {
             this.introTimer -= deltaTime;
             if (this.introTimer <= 0) {
@@ -179,13 +158,13 @@ export default class HUD {
                     this.introTimer = 1.0;
                     this.introText = 'PLANT!!!';
                 } else if (this.introState === 'plant') {
-                    this.introState = 'finished'; // Меняем на 'finished'
+                    this.introState = 'finished';
                     this.introText = '';
-                    // HUD больше не управляет canPlayerInteract, он просто сообщает о своем состоянии
                 }
             }
         }
-        // 1. Обновление таймеров перезарядки карточек
+
+        // Обновление таймеров перезарядки карточек
         for (const card of this.plantCards) {
             if (card.cooldownTimer > 0) {
                 card.cooldownTimer -= deltaTime;
@@ -195,21 +174,20 @@ export default class HUD {
             }
         }
 
-        // --- 2. ВОТ ЭТОТ БЛОК ОТСУТСТВОВАЛ: ПЛАВНОЕ ОБНОВЛЕНИЕ ПРОГРЕСС-БАРА ---
-        if (this.progress.total > 0) {
+        // Плавное обновление прогресс-бара
+        if (this.progress.totalWaves > 0) {
             const LERP_FACTOR = 0.05;
-            const targetProgress = this.progress.current;
+            const targetProgress = this.progress.currentWave / this.progress.totalWaves;
             const difference = targetProgress - this.visualProgress;
             
             this.visualProgress += difference * LERP_FACTOR;
 
-            if (Math.abs(difference) < 0.1) {
+            if (Math.abs(difference) < 0.001) {
                 this.visualProgress = targetProgress;
             }
         }
-        // --- КОНЕЦ БЛОКА ---
         
-        // 3. Обновление анимации объявления
+        // Обновление анимации объявления
         const ann = this.announcement;
         if (ann.state !== 'idle') {
             ann.timer += deltaTime;
@@ -232,27 +210,23 @@ export default class HUD {
             }
         }
 
-        // 4. Обновление анимации флажков
-        if (this.progress.total > 0) {
-            const currentProgressPercentage = this.visualProgress / this.progress.total;
-            for (const flag of this.progressFlags) {
-                // Условие подъема: когда реальный прогресс ПЕРЕСЕК точку срабатывания
-                if (flag.state === 'resting' && (this.progress.current / this.progress.total) >= flag.triggerProgress) {
-                    flag.state = 'raising';
-                }
-                
-                // Анимация подъема
-                if (flag.state === 'raising') {
-                    const diff = flag.raisedY - flag.currentY;
-                    flag.currentY += diff * 0.05; // lerp
-                    if (Math.abs(diff) < 1) {
-                        flag.currentY = flag.raisedY;
-                        flag.state = 'raised';
-                    }
+        // Обновление анимации флажков
+        for (const flag of this.progressFlags) {
+            // Условие подъема: когда началась волна, ИНДЕКС которой равен или больше triggerWaveIndex
+            if (flag.state === 'resting' && (this.progress.currentWave - 1) >= flag.triggerWaveIndex) {
+                flag.state = 'raising';
+            }
+            if (flag.state === 'raising') {
+                const diff = flag.raisedY - flag.currentY;
+                flag.currentY += diff * 0.05; // lerp
+                if (Math.abs(diff) < 1) {
+                    flag.currentY = flag.raisedY;
+                    flag.state = 'raised';
                 }
             }
         }
     }
+
     startCooldown(plantName) {
         const card = this.plantCards.find(c => c.name === plantName);
         if (card) {
@@ -268,12 +242,12 @@ export default class HUD {
             {
                 if (card.cooldownTimer > 0) {
                     Debug.log(`Card ${card.name} is on cooldown.`);
-                    soundManager.playSoundEffect('error_buzz', 0.5); // Звук ошибки
+                    soundManager.playSoundEffect('error_buzz', 0.5);
                     return null;
                 }
                 if (this.sunCount < card.cost) {
                     Debug.log(`Not enough sun for ${card.name}.`);
-                    soundManager.playSoundEffect('error_buzz', 0.5); // Звук ошибки
+                    soundManager.playSoundEffect('error_buzz', 0.5);
                     return null;
                 }
                 eventBus.publish('card:selected', { cardName: card.name });
@@ -284,68 +258,50 @@ export default class HUD {
         return null;
     }
     
-
     draw(renderer, selectedPlantName = null) {
-        // 1. Отрисовка главной панели
         if (this.uiPanel.image) {
             renderer.drawImage(this.uiPanel.image, this.uiPanel.x, this.uiPanel.y, this.uiPanel.width, this.uiPanel.height);
         }
 
-        // 2. Отрисовка счетчика солнца
         this.drawSunCounter(renderer);
-
-        // 3. Отрисовка карточек
         this.drawPlantCards(renderer, selectedPlantName);
-
-        // 4. Отрисовка прогресс-бара
         this.drawProgressBar(renderer);
-
-        // 5. Отрисовка объявления 
         this.drawAnnouncement(renderer);
+
         if (this.introText) {
             const x = renderer.VIRTUAL_WIDTH / 2;
             const y = renderer.VIRTUAL_HEIGHT / 2;
-            
-            // Размер шрифта как процент от высоты
             const fontSize = Math.round(renderer.VIRTUAL_HEIGHT * 0.207); 
             const font = `${fontSize}px Arial`;
-            
-            // Смещение тени как процент от высоты
             const shadowOffset = renderer.VIRTUAL_HEIGHT * 0.003; 
 
             renderer.drawText(this.introText, x + shadowOffset, y + shadowOffset, font, 'rgba(0,0,0,0.5)', 'center', 'middle'); 
             renderer.drawText(this.introText, x, y, font, '#33cc33', 'center', 'middle');
         }
     }
+
     drawAnnouncement(renderer) {
         if (this.announcement.state === 'idle') return;
-
         const ctx = renderer.ctx;
         ctx.save();
-        
         ctx.globalAlpha = this.announcement.alpha;
         const text = this.announcement.text;
         const x = renderer.VIRTUAL_WIDTH / 2;
         const y = renderer.VIRTUAL_HEIGHT / 2;
         const font = `${Math.round(renderer.VIRTUAL_HEIGHT * 0.08)}px Arial`;
-        
         renderer.drawText(text, x, y, font, '#FF4D4D', 'center', 'middle');
-
         ctx.restore();
     }
+
     drawSunCounter(renderer) {
         const ctx = renderer.ctx;
         ctx.save();
         
-        // Иконка
         if (this.sunCounter.icon) {
             const iconSize = 50;
             renderer.drawImage(this.sunCounter.icon, this.sunCounter.x - iconSize/2, this.sunCounter.y - iconSize - 5, iconSize, iconSize);
         }
-
         
-
-        // Текст
         const text = `${this.sunCount}`;
         const textY = this.sunCounter.y + 15;
         renderer.drawText(
@@ -357,32 +313,27 @@ export default class HUD {
             'center', 
             'middle'
         );
-
-        
+        ctx.restore();
     }
+
     drawPlantCards(renderer, selectedPlantName) {
         for (const card of this.plantCards) {
             const canAfford = this.sunCount >= card.cost;
             const isOnCooldown = card.cooldownTimer > 0;
-            const alpha = canAfford ? 1.0 : 0.6; // Используем alpha в renderer'е, если понадобится
+            const alpha = canAfford ? 1.0 : 0.6;
 
-            // 1. Рисуем фон карточки
             if (this.cardBackgroundImage) {
                 renderer.drawImage(this.cardBackgroundImage, card.rect.x, card.rect.y, card.rect.width, card.rect.height);
             }
 
-            // --- Временно получаем доступ к ctx для установки прозрачности ---
             const ctx = renderer.ctx;
             ctx.save();
             ctx.globalAlpha = alpha;
-            // ---
 
-            // 2. Рисуем изображение растения
             if (card.image) {
                 const imgPaddingX = card.rect.width * 0.1;
                 const imgPaddingY = card.rect.height * 0.05;
                 const imgAreaHeight = card.rect.height * 0.7;
-
                 renderer.drawImage(
                     card.image, 
                     card.rect.x + imgPaddingX, 
@@ -392,69 +343,50 @@ export default class HUD {
                 );
             }
 
-            // 3. РАСЧЕТ ПОЗИЦИЙ ДЛЯ ТЕКСТА И ИКОНКИ (Новая логика)
             const costText = `${card.cost}`;
-            const bottomAreaY = card.rect.y + card.rect.height * 0.88; // Вертикальный центр для нижней зоны
-            const centerAreaX = card.rect.x + card.rect.width / 2;    // Горизонтальный центр карточки
-
-            // Сдвигаем текст немного влево от центра
+            const bottomAreaY = card.rect.y + card.rect.height * 0.88;
+            const centerAreaX = card.rect.x + card.rect.width / 2;
             const textX = centerAreaX -2; 
             const textY = bottomAreaY + 1
-            // Рисуем текст с выравниванием по правому краю от новой точки
             renderer.drawText(
                 costText,
                 textX,
                 textY,
                 this.cardFont,
                 'black',
-                'center', // <-- ВЫРАВНИВАНИЕ ПО ПРАВОМУ КРАЮ
+                'center',
                 'middle'
             );
 
-            // 4. Рисуем иконку солнца справа от текста
             if (this.sunIconImage) {
                 const iconSize = 20;
-                // Иконка теперь тоже привязана к центру, но со смещением вправо
                 const iconX = centerAreaX + 15;
                 const iconY = bottomAreaY - iconSize / 2;
-
                 renderer.drawImage(this.sunIconImage, iconX, iconY, iconSize, iconSize);
             }
             
-            // --- Восстанавливаем прозрачность ---
             ctx.restore();
-            // ---
 
-            // 5. Подсветка выбранной карточки
             if (isOnCooldown) {
                 const progress = card.cooldownTimer / card.maxCooldown;
                 const overlayHeight = card.rect.height * progress;
-
-                const pRect = { // Физические координаты
+                const pRect = {
                     x: card.rect.x * renderer.scale + renderer.offsetX,
                     y: card.rect.y * renderer.scale + renderer.offsetY,
                     w: card.rect.width * renderer.scale,
                     h: card.rect.height * renderer.scale
                 };
                 const pOverlayHeight = overlayHeight * renderer.scale;
-
                 const ctx = renderer.ctx;
                 ctx.save();
-                
-                // Создаем градиент для "занавеса"
                 const gradient = ctx.createLinearGradient(pRect.x, pRect.y, pRect.x, pRect.y + pOverlayHeight);
-                gradient.addColorStop(0, 'rgba(0, 0, 0, 0.7)'); // Темный сверху
-                gradient.addColorStop(1, 'rgba(50, 50, 50, 0.5)'); // Светлее снизу
-
+                gradient.addColorStop(0, 'rgba(0, 0, 0, 0.7)');
+                gradient.addColorStop(1, 'rgba(50, 50, 50, 0.5)');
                 ctx.fillStyle = gradient;
-                // Рисуем "занавес" снизу вверх
                 ctx.fillRect(pRect.x, pRect.y, pRect.w, pOverlayHeight);
-
                 ctx.restore();
             }
-            // --- КОНЕЦ НОВОЙ ЛОГИКИ ---
 
-            // Подсветка (только если доступна)
             if (canAfford && !isOnCooldown && card.name === selectedPlantName) {
                 renderer.drawRect(card.rect.x, card.rect.y, card.rect.width, card.rect.height, 'lime', 3);
             }
@@ -467,17 +399,14 @@ export default class HUD {
 
     drawProgressBar(renderer) {
         const pb = this.progressBar;
-        if (!pb.image || !this.progress.total) return;
+        if (!pb.image || !this.progress.totalWaves) return;
 
-        // 1. Рисуем фон
         renderer.drawImage(pb.image, pb.x, pb.y, pb.width, pb.height);
         
-        // --- ОБЩИЕ ПАРАМЕТРЫ ДЛЯ АНИМАЦИИ ---
         const barInnerPadding = pb.width * 0.05;
         const totalFillableWidth = pb.width - barInnerPadding * 2;
-        const progressPercentage = this.visualProgress / this.progress.total;
-
-        // 2. Рисуем зеленую полосу прогресса
+        
+        const progressPercentage = this.visualProgress;
         const barFillWidth = totalFillableWidth * progressPercentage;
         
         const pX = (pb.x + pb.width - barInnerPadding - barFillWidth) * renderer.scale + renderer.offsetX;
@@ -488,40 +417,30 @@ export default class HUD {
         renderer.ctx.fillStyle = '#6ab04c';
         renderer.ctx.fillRect(pX, pY, pW, pH);
 
-        // 3. Рисуем флажки (статичны, без изменений)
         if (pb.flagImage) {
             const flagHeight = pb.height * 0.8;
             const flagWidth = flagHeight * (pb.flagImage.width / pb.flagImage.height);
-            const barInnerPadding = pb.width * 0.05;
-            const totalFillableWidth = pb.width - barInnerPadding * 2;
             
             for (const flag of this.progressFlags) {
-                // X-позиция флажка теперь постоянна
-                const flagX = (pb.x + pb.width - barInnerPadding) - (totalFillableWidth * flag.triggerProgress) - (flagWidth / 2);
+                const flagProgress = (flag.triggerWaveIndex + 1) / this.progress.totalWaves;
+                const flagX = (pb.x + pb.width - barInnerPadding) - (totalFillableWidth * flagProgress) - (flagWidth / 2);
                 renderer.drawImage(pb.flagImage, flagX, flag.currentY, flagWidth, flagHeight);
             }
         }
-
-        // 4. Рисуем голову зомби
+        
         if (pb.headImage) {
             const headHeight = pb.height * 1.2;
             const headWidth = headHeight * (pb.headImage.width / pb.headImage.height);
-            
-            // --- ИСПРАВЛЕННЫЙ РАСЧЕТ ПОЗИЦИИ ГОЛОВЫ ---
-            // Позиция головы теперь напрямую зависит от процента прогресса, а не от ширины полосы
             const headX = (pb.x + pb.width - barInnerPadding) - (totalFillableWidth * progressPercentage) - (headWidth / 2);
-            // --- КОНЕЦ ИСПРАВЛЕНИЯ ---
-
             const headY = pb.y + (pb.height - headHeight) / 2;
             renderer.drawImage(pb.headImage, headX, headY, headWidth, headHeight);
         }
     }
+
     getSunCounterPosition() {
-        // Координаты центра иконки
         return { 
             x: this.sunCounter.x, 
-            y: this.sunCounter.y - 25 // Иконка находится выше текста
+            y: this.sunCounter.y - 25
         };
     }
-
 }

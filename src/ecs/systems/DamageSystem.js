@@ -11,36 +11,42 @@ export default class DamageSystem {
         eventBus.subscribe('melee:hit', this.handleMeleeHit.bind(this));
     }
 
-    applyDamage(targetId, damage) {
+     applyDamage(targetId, damage) {
+        let remainingDamage = damage; // Урон, который "остался" для нанесения
+
+        // --- НАЧАЛО НОВОЙ ЛОГИКИ ---
+
+        // 1. Сначала пытаемся нанести урон броне
         const armor = this.world.getComponent(targetId, 'ArmorComponent');
         if (armor && armor.currentHealth > 0) {
-            armor.currentHealth -= damage;
-            return; // Выходим, если урон поглотила броня
+            const damageToArmor = Math.min(remainingDamage, armor.currentHealth);
+            armor.currentHealth -= damageToArmor;
+            remainingDamage -= damageToArmor;
         }
 
-        const health = this.world.getComponent(targetId, 'HealthComponent');
-        if (health) {
-            const isAlreadyDead = health.currentHealth <= 0;
-            health.currentHealth -= damage;
+        // Если после брони еще остался урон, наносим его здоровью
+        if (remainingDamage > 0) {
+            const health = this.world.getComponent(targetId, 'HealthComponent');
+            if (health) {
+                const isAlreadyDead = health.currentHealth <= 0;
+                health.currentHealth -= remainingDamage;
 
-            // Если здоровье только что закончилось
-            if (health.currentHealth <= 0 && !isAlreadyDead) {
-                
-                // --- НАЧАЛО КЛЮЧЕВЫХ ИЗМЕНЕНИЙ ---
-                const isPlant = this.world.getComponent(targetId, 'PlantComponent');
+                // Если здоровье только что закончилось
+                if (health.currentHealth <= 0 && !isAlreadyDead) {
+                    const isPlant = this.world.getComponent(targetId, 'PlantComponent');
 
-                if (isPlant) {
-                    // ЭТО РАСТЕНИЕ: Мгновенное удаление
-                    Debug.log(`Plant ${targetId} was eaten. Marking for immediate removal.`);
-                    eventBus.publish('plant:death', { entityId: targetId });
-                    this.world.addComponent(targetId, new RemovalComponent());
-                } else {
-                    // ЭТО НЕ РАСТЕНИЕ (значит, зомби): Запускаем анимацию смерти
-                    this.initiateDeath(targetId);
+                    if (isPlant) {
+                        Debug.log(`Plant ${targetId} was eaten. Marking for immediate removal.`);
+                        eventBus.publish('plant:death', { entityId: targetId });
+                        this.world.addComponent(targetId, new RemovalComponent());
+                    } else {
+                        // Это не растение, запускаем анимацию смерти
+                        this.initiateDeath(targetId);
+                    }
                 }
-                // --- КОНЕЦ КЛЮЧЕВЫХ ИЗМЕНЕНИЙ ---
             }
         }
+        // --- КОНЕЦ НОВОЙ ЛОГИКИ ---
     }
 
     initiateDeath(entityId) {
