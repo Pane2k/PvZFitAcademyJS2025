@@ -8,7 +8,7 @@ export default class SunSpawningSystem {
         this.grid = grid
         this.factory = factory
 
-        this.spawnInterval = 1
+        this.spawnInterval = 5
         this.timer = this.spawnInterval / 2
     }
     update(deltaTime){
