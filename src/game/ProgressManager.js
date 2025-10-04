@@ -11,14 +11,20 @@ class ProgressManager {
         try {
             const data = localStorage.getItem(STORAGE_KEY);
             if (data) {
-                Debug.log('Player progress loaded from localStorage.');
-                return JSON.parse(data);
+                const loadedProgress = JSON.parse(data);
+                // --- VVV ИЗМЕНЕНИЕ: Обеспечиваем наличие настроек VVV ---
+                const defaultProgress = this.getDefaultProgress();
+                // Сливаем загруженный прогресс с дефолтным, чтобы новые поля (settings) появились
+                const finalProgress = { ...defaultProgress, ...loadedProgress };
+                finalProgress.settings = { ...defaultProgress.settings, ...(loadedProgress.settings || {}) };
+                // --- ^^^ КОНЕЦ ИЗМЕНЕНИЯ ^^^
+                Debug.log('Player progress loaded and merged with defaults.');
+                return finalProgress;
             }
         } catch (e) {
             Debug.error('Failed to load progress from localStorage', e);
         }
         
-        // Возвращаем прогресс по умолчанию, если ничего не найдено
         Debug.log('No saved progress found. Creating default progress.');
         return this.getDefaultProgress();
     }
@@ -37,6 +43,20 @@ class ProgressManager {
         this.saveProgress();
         Debug.log('Player progress has been reset.');
     }
+    
+    // --- VVV НОВЫЕ МЕТОДЫ VVV ---
+    getSetting(key) {
+        return this.progress.settings[key];
+    }
+
+    setSetting(key, value) {
+        if (this.progress.settings[key] !== value) {
+            this.progress.settings[key] = value;
+            this.saveProgress();
+            Debug.log(`Setting '${key}' updated to '${value}'.`);
+        }
+    }
+    // --- ^^^ КОНЕЦ НОВЫХ МЕТОДОВ ^^^ ---
 
     isLevelUnlocked(levelId) {
         return this.progress.unlockedLevels.includes(levelId);
@@ -51,13 +71,14 @@ class ProgressManager {
 
     getDefaultProgress() {
         return {
-            unlockedLevels: [1], // По умолчанию доступен только 1-й уровень
+            unlockedLevels: [1],
             settings: {
-                musicVolume: 0.8,
-                sfxVolume: 1.0
+                musicVolume: 0.5, // Стартовое значение
+                sfxVolume: 0.8    // Стартовое значение
             }
         };
     }
+    
     completeLevel(levelId) {
         const nextLevelId = levelId + 1;
         if (!this.isLevelUnlocked(nextLevelId)) {
@@ -70,6 +91,5 @@ class ProgressManager {
     }
 }
 
-// Экспортируем синглтон
 const progressManager = new ProgressManager();
 export default progressManager;

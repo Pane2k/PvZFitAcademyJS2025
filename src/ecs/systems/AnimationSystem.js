@@ -21,7 +21,11 @@ export default class AnimationSystem {
             const flagOverrides = proto?.components?.FlagComponent?.animationOverrides;
 
             if (isDying) {
-                animationName = 'dying';
+                if (hasFlag && flagOverrides?.dying) {
+                    animationName = flagOverrides.dying;
+                } else {
+                    animationName = 'dying';
+                }
                 loop = false; // <-- Четко указываем, что смерть не зациклена
             } else if (isAttacking) {
                 loop = true; // <-- Атака всегда зациклена

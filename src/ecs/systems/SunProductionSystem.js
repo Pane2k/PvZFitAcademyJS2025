@@ -1,5 +1,4 @@
 import Debug from "../../core/Debug.js";
-import LifetimeComponent from "../components/LifetimeComponent.js";
 import ArcMovementComponent from "../components/ArcMovementComponent.js"
 import TintEffectComponent from "../components/TintEffectComponent.js"
 import CollectibleComponent from "../components/CollectibleComponent.js"
@@ -83,7 +82,6 @@ export default class SunProductionSystem {
             const sunProto = this.world.factory.prototypes.sun;
             const sunValue = sunProto.value || 25;
             this.world.addComponent(sunId, new CollectibleComponent(sunValue));
-            this.world.addComponent(sunId, new LifetimeComponent(10));
             Debug.log(`Sunflower ${producerId} produced sun ${sunId}.`);
         }
     }

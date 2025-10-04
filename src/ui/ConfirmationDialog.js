@@ -7,32 +7,49 @@ export default class ConfirmationDialog {
         this.isVisible = false;
         this.panelImage = assetLoader.getImage('ui_dialog_panel');
         this.buttonImage = assetLoader.getImage('ui_button_default');
+        
+        // --- VVV ИЗМЕНЕНИЯ ЗДЕСЬ VVV ---
+        this.question = '';
+        this.confirmEvent = '';
+        this.cancelEvent = '';
+        // --- ^^^ КОНЕЦ ИЗМЕНЕНИЙ ^^^ ---
 
-        this.width = 350;
+        this.width = 400; // Немного шире для длинных вопросов
         this.height = 200;
         this.x = (virtualWidth - this.width) / 2;
         this.y = (virtualHeight - this.height) / 2;
 
         this.elements = {
-            'yesBtn': { x: 40, y: 120, width: 120, height: 50, text: 'Да' },
-            'noBtn': { x: 190, y: 120, width: 120, height: 50, text: 'Нет' },
+            'yesBtn': { x: 50, y: 120, width: 140, height: 50, text: 'Да' },
+            'noBtn': { x: 210, y: 120, width: 140, height: 50, text: 'Нет' },
         };
     }
 
-    toggle(isVisible) {
+    // --- VVV ИЗМЕНЕНИЕ: Сигнатура метода и логика VVV ---
+    toggle(isVisible, question = '', confirmEvent = '', cancelEvent = '') {
         this.isVisible = isVisible;
+        if (this.isVisible) {
+            this.question = `Вы уверены, что хотите ${question}?`;
+            this.confirmEvent = confirmEvent;
+            this.cancelEvent = cancelEvent;
+        }
     }
+    // --- ^^^ КОНЕЦ ИЗМЕНЕНИЯ ^^^ ---
 
     handleInput(eventName, pos) {
-        // --- ИЗМЕНЕНИЕ: Теперь мы слушаем 'input:down' вместо 'mousedown' ---
-        // Это гарантирует, что мы получаем событие, обработанное InputHandler и EventBus.
         if (!this.isVisible || eventName !== 'input:down') return;
         
         for (const key in this.elements) {
             const el = this.elements[key];
             if (this._isInside(pos.x, pos.y, this.x + el.x, this.y + el.y, el.width, el.height)) {
-                if (key === 'yesBtn') eventBus.publish('game:confirm_exit');
-                if (key === 'noBtn') eventBus.publish('ui:hide_exit_confirmation');
+                // --- VVV ИЗМЕНЕНИЕ: Публикуем сохраненные события VVV ---
+                if (key === 'yesBtn' && this.confirmEvent) {
+                    eventBus.publish(this.confirmEvent);
+                }
+                if (key === 'noBtn' && this.cancelEvent) {
+                    eventBus.publish(this.cancelEvent);
+                }
+                // --- ^^^ КОНЕЦ ИЗМЕНЕНИЯ ^^^ ---
                 break;
             }
         }
@@ -49,8 +66,9 @@ export default class ConfirmationDialog {
             renderer.drawImage(this.panelImage, this.x, this.y, this.width, this.height);
         }
         
-        renderer.drawText("Вы уверены, что", this.x + this.width / 2, this.y + 40, '22px Arial', 'white', 'center');
-        renderer.drawText("хотите выйти?", this.x + this.width / 2, this.y + 70, '22px Arial', 'white', 'center');
+        // --- VVV ИЗМЕНЕНИЕ: Используем сохраненный вопрос VVV ---
+        renderer.drawText(this.question, this.x + this.width / 2, this.y + 60, '22px Arial', 'white', 'center', 'middle');
+        // --- ^^^ КОНЕЦ ИЗМЕНЕНИЯ ^^^ ---
 
         for (const key in this.elements) {
             const el = this.elements[key];

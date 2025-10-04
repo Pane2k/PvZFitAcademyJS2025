@@ -1,6 +1,5 @@
 import Debug from "../../core/Debug.js";
 import GridLocationComponent from "../components/GridLocationComponent.js";
-import LifetimeComponent from "../components/LifetimeComponent.js";
 import CollectibleComponent from "../components/CollectibleComponent.js"
 
 export default class SunSpawningSystem {
@@ -72,7 +71,7 @@ export default class SunSpawningSystem {
             // Если центр солнца достиг или пересек центр целевой ячейки
             if (sunCenterY >= targetY) {
                 this.world.removeComponent(entityID, 'VelocityComponent');
-                this.world.addComponent(entityID, new LifetimeComponent(10));
+                
                 pos.y = targetY 
                 Debug.log(`Sun (entity ${entityID}) landed at [${gridLoc.row}, ${gridLoc.col}]. VelocityComponent removed.`);
             }

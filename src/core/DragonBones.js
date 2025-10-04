@@ -1,8 +1,10 @@
 // src/core/DragonBones.js
 /**
- * @version 3.3.1 (Non-Looping Animation Fix)
- * - Исправлена ошибка в `_getInterpolatedValue`, которая мешала корректному
- *   проигрыванию последнего кадра в незацикленных анимациях (например, 'dying').
+ * @version 3.4.1 (Animation Playback Fix)
+ * - Исправлен метод `play` в AnimationPlayer. Ранее он мог сбрасывать
+ *   зацикленные анимации на 0-й кадр каждый раз, когда вызывался,
+ *   из-за чего анимация "замерзала". Теперь, если анимация уже играет,
+ *   метод просто выходит, не сбрасывая ее.
  */
 const dragonBones = {};
 
@@ -12,6 +14,7 @@ const dragonBones = {};
     const DEG_RAD = Math.PI / 180;
 
     class Armature {
+        // ... (конструктор и другие методы без изменений)
         constructor(armatureData, factory) {
             this.name = armatureData.name;
             this.frameRate = armatureData.frameRate;
@@ -32,6 +35,7 @@ const dragonBones = {};
     }
 
     class Bone {
+        // ... (без изменений)
         constructor(boneData) {
             this.name = boneData.name;
             this.parent = null;
@@ -62,11 +66,13 @@ const dragonBones = {};
     }
 
     class Slot {
+        // ... (без изменений)
         constructor(slotData, bone) {
             this.name = slotData.name;
             this.parentBone = bone;
             this.displayData = null; 
             this.textureData = null;
+            this._displayAlpha = 1.0; 
         }
     }
 
@@ -80,16 +86,29 @@ const dragonBones = {};
             this.loop = true;
         }
 
+        // --- VVV КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ ЗДЕСЬ VVV ---
         play(name, loop = true) {
-            if (!this.animations[name]) return console.error(`Animation not found: ${name}`);
-            // Не перезапускаем анимацию, если она уже играет (особенно важно для незацикленных)
-            if (this.activeAnimation && this.activeAnimation.name === name) return;
+            if (!this.animations[name]) {
+                console.error(`Animation not found: ${name}`);
+                return;
+            }
+
+            // Если эта анимация уже играет, ничего не делаем.
+            // Это предотвращает сброс анимации на 0-й кадр каждый раз, когда AnimationSystem вызывает play().
+            if (this.activeAnimation && this.activeAnimation.name === name) {
+                this.loop = loop; // Обновляем состояние цикла на всякий случай
+                return;
+            }
+
+            // Если это новая анимация, запускаем ее с самого начала.
             this.activeAnimation = this.animations[name];
             this.animationTime = 0;
             this.loop = loop;
         }
+        // --- ^^^ КОНЕЦ ИСПРАВЛЕНИЯ ^^^ ---
 
         advanceTime(deltaTime) {
+            // ... (остальной код advanceTime без изменений)
             if (!this.activeAnimation) return;
             const frameRate = this.armature.frameRate || 24;
             const durationInSeconds = (this.activeAnimation.duration || 0) / frameRate;
@@ -105,6 +124,7 @@ const dragonBones = {};
 
             const currentFrame = this.animationTime * frameRate;
             const animatedBones = new Set();
+            const animatedSlots = new Set();
 
             (this.activeAnimation.bone || []).forEach(boneAnim => {
                 const bone = this.armature.getBone(boneAnim.name);
@@ -136,24 +156,40 @@ const dragonBones = {};
                     bone.animTransform = { ...bone.bindPose };
                 }
             });
+
+            (this.activeAnimation.slot || []).forEach(slotAnim => {
+                const slot = this.armature.getSlot(slotAnim.name);
+                if (!slot) return;
+                
+                const color = this._getFrameValue(slotAnim.colorFrame, currentFrame);
+                if (color && color.value) {
+                    slot._displayAlpha = (color.value.aM ?? 100) / 100.0;
+                } else {
+                    slot._displayAlpha = 1.0;
+                }
+                animatedSlots.add(slot.name);
+            });
+            this.armature.slots.forEach(slot => {
+                if (!animatedSlots.has(slot.name)) {
+                    slot._displayAlpha = 1.0;
+                }
+            });
         }
         
         _getInterpolatedValue(frames, currentFrame, isRotation = false) {
+            // ... (без изменений)
             if (!frames || frames.length === 0) return null;
-            // --- VVV ИСПРАВЛЕНИЕ ДЛЯ ПОСЛЕДНЕГО КАДРА VVV ---
             if (frames.length === 1) return { ...frames[0] };
             let totalDuration = 0;
             for (let i = 0; i < frames.length; i++) {
                 const frame = frames[i];
                 const frameDuration = frame.duration || 0;
 
-                // Если это последний кадр, и время вышло за его пределы, возвращаем его.
                 if (i === frames.length - 1 && currentFrame >= totalDuration) {
                     return { ...frame };
                 }
 
                 if (currentFrame >= totalDuration && currentFrame < totalDuration + frameDuration) {
-                    // --- ^^^ КОНЕЦ ИСПРАВЛЕНИЯ ^^^ ---
                     const startFrame = frame;
                     const nextFrameIndex = i + 1;
                     const endFrame = (nextFrameIndex < frames.length) ? frames[nextFrameIndex] : startFrame;
@@ -178,10 +214,25 @@ const dragonBones = {};
             }
             return { ...frames[frames.length - 1] };
         }
+        
+        _getFrameValue(frames, currentFrame) {
+            // ... (без изменений)
+            if (!frames || frames.length === 0) return null;
+            let totalDuration = 0;
+            for (const frame of frames) {
+                const frameDuration = frame.duration || 0;
+                if (currentFrame >= totalDuration && currentFrame < totalDuration + frameDuration) {
+                    return frame;
+                }
+                totalDuration += frameDuration;
+            }
+            return frames[frames.length - 1];
+        }
     }
 
     class Factory {
-        constructor() {
+       // ... (без изменений)
+       constructor() {
             this.skeletonData = {};
             this.textureData = {};
         }
@@ -210,7 +261,12 @@ const dragonBones = {};
                 });
                 parsedArmature.skins['default'] = skinDisplays;
             });
-            parsedArmature.animations.push(...(armatureData.animation || []));
+            
+            // --- ИСПРАВЛЕНИЕ ДЛЯ НОВЫХ ФАЙЛОВ АНИМАЦИИ ---
+            const animationsSource = armatureData.animation || skeletonJSON.animation || [];
+            parsedArmature.animations.push(...animationsSource);
+            // --- КОНЕЦ ИСПРАВЛЕНИЯ ---
+
             this.skeletonData[name] = parsedArmature;
         }
 

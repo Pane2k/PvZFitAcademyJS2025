@@ -32,8 +32,10 @@
             "RenderableComponent": { "layer": 4 },
             "VelocityComponent": { "vx": 0, "vy": 40 },
             "CollectibleComponent": {},
-            
             "GridLocationComponent": {},
+
+            "BlinksBeforeRemovalComponent": {},
+            
             "HitboxComponent": { "offsetX": 0, "offsetY": 0, "width": 64, "height": 64 }
         }
     },
@@ -143,7 +145,8 @@
                 "attachmentName": "Zombie/flag_fullhp",
                 "animationOverrides": {
                     "walk": "walk_flag",
-                    "attack": "attack_flag"
+                    "attack": "attack_flag",
+                    "dying": "dying_flag"
                 }
             }
         }

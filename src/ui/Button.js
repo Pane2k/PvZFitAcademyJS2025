@@ -1,7 +1,10 @@
+// src/ui/Button.js
+
 import Debug from "../core/Debug.js";
 
 export default class Button {
     constructor(config) {
+        // ... (конструктор без изменений)
         this.x = config.x;
         this.y = config.y;
         this.width = config.width;
@@ -20,10 +23,7 @@ export default class Button {
         this.isHovered = false;
     }
     
-    // --- НОВЫЙ МЕТОД ---
-    /**
-     * Принудительно сбрасывает состояние кнопки к исходному.
-     */
+    // ... (resetState без изменений)
     resetState() {
         this.state = 'idle';
         this.isHovered = false;
@@ -33,13 +33,25 @@ export default class Button {
         const localX = pos.x - cameraOffsetX;
         const localY = pos.y;
 
+        const wasHovered = this.isHovered;
         this.isHovered = this._isInside(localX, localY);
+
+        // --- VVV ДОБАВЛЕНО ЛОГИРОВАНИЕ VVV ---
+        if (this.isHovered && !wasHovered) {
+            console.log(`[Button Event] MOUSE ENTER -> "${this.text}"`);
+        } else if (!this.isHovered && wasHovered) {
+            console.log(`[Button Event] MOUSE LEAVE -> "${this.text}"`);
+        }
+        // --- ^^^ КОНЕЦ ЛОГИРОВАНИЯ ^^^ ---
 
         if (eventName === 'down') {
             if (this.isHovered) this.state = 'pressed';
         } else if (eventName === 'up') {
             if (this.state === 'pressed' && this.isHovered) {
-                if (this.onClick) this.onClick();
+                if (this.onClick) {
+                    console.log(`[Button Event] CLICK -> "${this.text}"`); // Лог клика
+                    this.onClick();
+                }
             }
             this.state = this.isHovered ? 'hover' : 'idle';
         } else if (eventName === 'move') {
@@ -55,10 +67,11 @@ export default class Button {
     }
 
     draw(renderer, offsetX = 0, offsetY = 0) {
+        // ... (метод draw без изменений)
         const finalX = this.x + offsetX;
         const finalY = this.y + offsetY;
 
-        const imageToDraw = this.images[this.state];
+        const imageToDraw = this.images[this.state] || this.images.idle;
         if (imageToDraw) {
             renderer.drawImage(imageToDraw, finalX, finalY, this.width, this.height);
         }

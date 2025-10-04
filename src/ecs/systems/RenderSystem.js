@@ -12,13 +12,13 @@ export default class RenderSystem {
     }
 
     update(cameraOffsetX = 0) {
-        // --- ИЗМЕНЕНИЕ: Удаляем разделение на слои, теперь это единый вызов ---
         let entitiesToRender = this.world.getEntitiesWithComponents('PositionComponent', 'RenderableComponent');
         
         entitiesToRender = entitiesToRender.filter(entityID => {
             const hasVisuals = this.world.getComponent(entityID, 'SpriteComponent') || 
                                this.world.getComponent(entityID, 'DragonBonesComponent') ||
-                               this.world.getComponent(entityID, 'TextComponent');
+                               this.world.getComponent(entityID, 'TextComponent') ||
+                               this.world.getComponent(entityID, 'FillColorComponent'); // <-- Добавлено
             return hasVisuals && !this.world.getComponent(entityID, 'HiddenComponent');
         });
 
@@ -33,32 +33,35 @@ export default class RenderSystem {
 
         for (const entityID of entitiesToRender) {
             const pos = this.world.getComponent(entityID, 'PositionComponent');
+            const renderable = this.world.getComponent(entityID, 'RenderableComponent'); // <-- Получаем компонент
             const spriteComp = this.world.getComponent(entityID, 'SpriteComponent');
             const dbComp = this.world.getComponent(entityID, 'DragonBonesComponent');
             const textComp = this.world.getComponent(entityID, 'TextComponent');
             const fadeComp = this.world.getComponent(entityID, 'FadeEffectComponent');
             const fillComp = this.world.getComponent(entityID, 'FillColorComponent');
 
-            // --- КЛЮЧЕВОЕ ИЗМЕНЕНИЕ: Определяем, нужно ли смещать объект ---
-            // UI-элементы и эффекты на весь экран (слой >= 100) не смещаются
-            const isStatic = this.world.getComponent(entityID, 'RenderableComponent').layer >= 90;
-
+            const isStatic = renderable.layer >= 90;
             const finalOffsetX = isStatic ? 0 : cameraOffsetX;
             
-            // (расчет finalWidth, finalHeight, drawX, drawY остается без изменений)
             const finalWidth = pos.width * pos.scale;
             const finalHeight = pos.height * pos.scale;
             const drawX = (pos.x - finalWidth / 2) + finalOffsetX;
             const drawY = (pos.y - finalHeight / 2);
 
-             const ctx = this.renderer.ctx;
+            const ctx = this.renderer.ctx;
             ctx.save();
+            
+            // --- НОВАЯ ЛОГИКА ПРОЗРАЧНОСТИ ---
+            // Комбинируем общую прозрачность сущности и прозрачность от эффекта затухания
+            let combinedAlpha = renderable.alpha;
             if (fadeComp) {
-                ctx.globalAlpha = fadeComp.currentAlpha;
+                combinedAlpha *= fadeComp.currentAlpha;
             }
+            ctx.globalAlpha = combinedAlpha;
+            // --- КОНЕЦ НОВОЙ ЛОГИКИ ---
 
-            // --- НОВЫЙ БЛОК ДЛЯ ОТРИСОВКИ ПРЯМОУГОЛЬНИКА ---
             if (fillComp) {
+                // ... (без изменений)
                 ctx.fillStyle = fillComp.color;
                 const pX = drawX * this.renderer.scale + this.renderer.offsetX;
                 const pY = drawY * this.renderer.scale + this.renderer.offsetY;
@@ -66,21 +69,18 @@ export default class RenderSystem {
                 const pH = finalHeight * this.renderer.scale;
                 ctx.fillRect(pX, pY, pW, pH);
             }
-            // --- КОНЕЦ НОВОГО БЛОКА ---
             else if (spriteComp && spriteComp.image) {
                 this.renderSprite(entityID, spriteComp, pos, drawX, drawY, finalWidth, finalHeight);
             } else if (dbComp && dbComp.armature) {
-                this.renderDragonBones(dbComp, pos, finalOffsetX);
+                // Передаем общую альфу в метод
+                this.renderDragonBones(dbComp, pos, finalOffsetX, combinedAlpha);
             } else if (textComp) {
+                // ... (без изменений)
                 const physicalX = (pos.x + finalOffsetX) * this.renderer.scale + this.renderer.offsetX;
                 const physicalY = pos.y * this.renderer.scale + this.renderer.offsetY;
-                
                 ctx.save();
-                // Применяем трансформации относительно центра текста
                 ctx.translate(physicalX, physicalY);
                 ctx.scale(pos.scale, pos.scale);
-                
-                // Рисуем сам текст (Renderer.drawText больше не используется здесь)
                 const parts = textComp.font.split(' ');
                 const virtualSize = parseFloat(parts[0]);
                 const physicalSize = virtualSize * this.renderer.scale;
@@ -88,25 +88,28 @@ export default class RenderSystem {
                 ctx.fillStyle = textComp.color;
                 ctx.textAlign = textComp.textAlign;
                 ctx.textBaseline = textComp.textBaseline;
-                ctx.fillText(textComp.text, 0, 0); // Рисуем в точке (0,0) нового отмасштабированного контекста
+                ctx.fillText(textComp.text, 0, 0);
                 ctx.restore();
             }
             
             ctx.restore();
 
             if (Debug.showHitboxes) this.drawDebugHitbox(entityID, pos, finalOffsetX);
-            // --- ИСПРАВЛЕНИЕ ЗДЕСЬ: передаем правильную ширину в health bar ---
             if (Debug.showHealthBars) this.drawDebugHealthBar(entityID, pos, drawX, drawY, finalWidth);
         }
     }
 
     renderSprite(entityID, spriteComp, pos, drawX, drawY, drawWidth, drawHeight) {
+        // ... (метод теперь не управляет globalAlpha, это делается в главном цикле)
         const tint = this.world.getComponent(entityID, 'TintEffectComponent');
         const ghost = this.world.getComponent(entityID, 'GhostPlantComponent');
         const ctx = this.renderer.ctx;
         
         ctx.save();
-        if (ghost) ctx.globalAlpha = ghost.alpha;
+        if (ghost) {
+            // Применяем альфу от ghost-эффекта поверх общей альфы
+            ctx.globalAlpha *= ghost.alpha; 
+        }
         
         if (tint) {
             this.drawTintedImage(spriteComp.image, drawX, drawY, drawWidth, drawHeight, tint.getCurrentColor());
@@ -119,7 +122,7 @@ export default class RenderSystem {
         ctx.restore();
     }
 
-    renderDragonBones(dbComp, pos, cameraOffsetX = 0) {
+    renderDragonBones(dbComp, pos, cameraOffsetX = 0, entityAlpha = 1.0) {
         const armature = dbComp.armature;
         const textureImage = this.assetLoader.getImage(dbComp.textureName.replace('_ske', '_img'));
         if (!textureImage) return;
@@ -135,10 +138,17 @@ export default class RenderSystem {
         ctx.scale(finalScale, finalScale);
         
         armature.drawOrder.forEach(slot => {
-            if (slot.displayData && slot.textureData && slot.parentBone) {
+            // --- КЛЮЧЕВОЕ ИЗМЕНЕНИЕ ---
+            // Проверяем, что слот видим по анимации (_displayAlpha > 0)
+            if (slot.displayData && slot.textureData && slot.parentBone && slot._displayAlpha > 0) {
                 const boneWt = slot.parentBone.worldTransform;
                 const displayT = slot.displayData.transform;
                 ctx.save();
+
+                // Устанавливаем итоговую прозрачность для этого слота
+                // (общая прозрачность сущности * прозрачность слота из анимации)
+                ctx.globalAlpha = entityAlpha * slot._displayAlpha;
+
                 ctx.translate(boneWt.x, boneWt.y);
                 ctx.rotate(boneWt.skX);
                 ctx.scale(boneWt.scX, boneWt.scY);
@@ -155,6 +165,7 @@ export default class RenderSystem {
         ctx.restore();
     }
     
+    // ... (остальные методы без изменений)
     drawDebugBones(armature) {
         const ctx = this.renderer.ctx;
         ctx.save();
@@ -193,13 +204,11 @@ export default class RenderSystem {
      drawDebugHealthBar(entityID, pos, drawX, drawY, finalWidth) {
         const health = this.world.getComponent(entityID, 'HealthComponent');
         if (health && health.maxHealth > 0) {
-            // Используем finalWidth вместо pos.width
             const barWidth = finalWidth > 0 ? finalWidth * 0.8 : 50;
             const barHeight = 8;
             const barX = drawX + (finalWidth - barWidth) / 2;
             const barY = drawY - barHeight - 5;
             
-            // ... (остальной код отрисовки health bar без изменений)
             const pBarX = barX * this.renderer.scale + this.renderer.offsetX;
             const pBarY = barY * this.renderer.scale + this.renderer.offsetY;
             const pBarWidth = barWidth * this.renderer.scale;

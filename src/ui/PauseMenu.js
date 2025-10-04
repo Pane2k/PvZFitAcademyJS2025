@@ -1,5 +1,7 @@
 import eventBus from "../core/EventBus.js";
 import Debug from "../core/Debug.js";
+import progressManager from "../game/ProgressManager.js";
+import soundManager from "../core/SoundManager.js";
 
 export default class PauseMenu {
     constructor(assetLoader, virtualWidth, virtualHeight) {
@@ -13,50 +15,43 @@ export default class PauseMenu {
         this.sliderHandleImage = assetLoader.getImage('ui_slider_handle');
 
         this.width = 400;
-        this.height = 300;
+        this.height = 350;
         this.x = (this.vWidth - this.width) / 2;
         this.y = (this.vHeight - this.height) / 2;
 
-        // --- НОВЫЕ СВОЙСТВА ДЛЯ ПЕРЕТАСКИВАНИЯ ---
         this.isDragging = false;
         this.dragOffsetX = 0;
         this.dragOffsetY = 0;
-        this.headerHeight = 50; // Высота области для "захвата"
-        // ---
+        this.headerHeight = 50;
 
         this.elements = {
-            'continueBtn': { x: 50, y: 220, width: 140, height: 50, text: 'Продолжить' },
-            'exitBtn': { x: 210, y: 220, width: 140, height: 50, text: 'Выйти' },
-            'musicSlider': { x: 50, y: 100, width: 300, height: 30, text: 'Музыка', value: 0.8 },
-            'sfxSlider': { x: 50, y: 160, width: 300, height: 30, text: 'Эффекты', value: 1.0 }
+            'continueBtn': { x: 50, y: 280, width: 140, height: 50, text: 'Продолжить' },
+            'exitBtn': { x: 210, y: 280, width: 140, height: 50, text: 'Выйти' },
+            'settingsBtn': { x: (this.width - 180) / 2, y: 210, width: 180, height: 50, text: 'Настройки' },
+            'musicSlider': { x: 50, y: 80, width: 300, height: 30, text: 'Музыка', value: progressManager.getSetting('musicVolume') },
+            'sfxSlider': { x: 50, y: 150, width: 300, height: 30, text: 'Эффекты', value: progressManager.getSetting('sfxVolume') }
         };
 
         this.activeSlider = null;
-        
-        // --- НОВЫЙ МЕТОД: Сохраняем привязанную функцию для корректного удаления слушателя ---
         this._boundHandleWindowBlur = this._handleWindowBlur.bind(this);
     }
 
     toggle(isVisible) {
         this.isVisible = isVisible;
-        // --- НОВАЯ ЛОГИКА: Добавляем/убираем слушатель расфокуса ---
         if (this.isVisible) {
             window.addEventListener('blur', this._boundHandleWindowBlur);
         } else {
             window.removeEventListener('blur', this._boundHandleWindowBlur);
-            // Принудительно сбрасываем состояние, если меню скрыли во время перетаскивания
             this._handleWindowBlur();
         }
     }
 
-    // --- НОВЫЙ МЕТОД: Обработчик потери фокуса ---
     _handleWindowBlur() {
         this.isDragging = false;
         this.activeSlider = null;
         Debug.log('Window lost focus, dragging stopped.');
     }
 
-    // --- ПОЛНОСТЬЮ ПЕРЕРАБОТАННЫЙ МЕТОД ОБРАБОТКИ ВВОДА ---
     handleInput(eventName, pos) {
         if (!this.isVisible && !this.isDragging && !this.activeSlider) return;
 
@@ -64,16 +59,14 @@ export default class PauseMenu {
         const worldY = pos.y;
 
         if (eventName === 'input:down') {
-            // 1. Проверяем клик по заголовку для начала перетаскивания
             if (this._isInside(worldX, worldY, this.x, this.y, this.width, this.headerHeight)) {
                 this.isDragging = true;
                 this.dragOffsetX = worldX - this.x;
                 this.dragOffsetY = worldY - this.y;
                 Debug.log('Pause menu dragging started.');
-                return; // Выходим, чтобы не активировать другие элементы
+                return;
             }
             
-            // 2. Проверяем клик по кнопкам
             for (const key in this.elements) {
                 const el = this.elements[key];
                 if (el.text && this._isInside(worldX, worldY, this.x + el.x, this.y + el.y, el.width, el.height)) {
@@ -82,7 +75,6 @@ export default class PauseMenu {
                 }
             }
 
-            // 3. Проверяем клик по слайдерам
             ['musicSlider', 'sfxSlider'].forEach(key => {
                  const el = this.elements[key];
                  if (this._isInside(worldX, worldY, this.x + el.x, this.y + el.y, el.width, el.height)) {
@@ -101,7 +93,6 @@ export default class PauseMenu {
             }
 
         } else if (eventName === 'input:up') {
-            // Сбрасываем все активные состояния при отпускании кнопки мыши
             this.isDragging = false;
             this.activeSlider = null;
         }
@@ -112,7 +103,6 @@ export default class PauseMenu {
         if (!slider) return;
         const relativeX = worldX - (this.x + slider.x);
         slider.value = Math.max(0, Math.min(1, relativeX / slider.width));
-        // Debug.log(`Slider ${slider.text} value changed to ${slider.value.toFixed(2)}`);
     }
 
     _onButtonClick(key) {
@@ -120,7 +110,15 @@ export default class PauseMenu {
         if (key === 'continueBtn') {
             eventBus.publish('game:resume');
         } else if (key === 'exitBtn') {
-            eventBus.publish('ui:show_exit_confirmation');
+            // --- VVV ИЗМЕНЕНИЕ: Передаем все данные, включая событие отмены VVV ---
+            eventBus.publish('ui:show_exit_confirmation', {
+                question: 'выйти в главное меню',
+                confirmEvent: 'game:confirm_exit',
+                cancelEvent: 'gameplay:hide_confirmation' // Указываем, какое событие для отмены
+            });
+            // --- ^^^ КОНЕЦ ИЗМЕНЕНИЯ ^^^ ---
+        } else if (key === 'settingsBtn') {
+            eventBus.publish('ui:show_settings');
         }
     }
 

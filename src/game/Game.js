@@ -102,6 +102,16 @@ export default class Game{
             this.assetLoader.loadImage('ui_zombie_head', 'assets/images/zombie_head.png'),
             this.assetLoader.loadImage('ui_panel', 'assets/images/ui_panel.png'),
 
+            this.assetLoader.loadImage('ui_dialog_panel', 'assets/images/ui_dialog_panel.png'),
+            this.assetLoader.loadImage('ui_button_default', 'assets/images/ui_button_default.png'),
+            this.assetLoader.loadImage('ui_slider_bg', 'assets/images/ui_slider_bg.png'),
+            this.assetLoader.loadImage('ui_slider_handle', 'assets/images/ui_slider_handle.png'),
+            // --- VVV ДОБАВИТЬ ЭТИ СТРОКИ VVV ---
+            this.assetLoader.loadImage('icon_sound_0', 'assets/images/Sound_0.png'),
+            this.assetLoader.loadImage('icon_sound_33', 'assets/images/Sound_33.png'),
+            this.assetLoader.loadImage('icon_sound_66', 'assets/images/Sound_66.png'),
+            this.assetLoader.loadImage('icon_sound_100', 'assets/images/Sound_100.png'),
+
             this.assetLoader.loadImage('card_background', 'assets/images/card_bg.png'),
             this.assetLoader.loadImage('sun_icon', 'assets/images/sun.png'),
 

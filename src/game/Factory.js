@@ -42,6 +42,7 @@ import LeadLosingZombieComponent from "../ecs/components/LeadLosingZombieCompone
 import UITravelComponent from "../ecs/components/UITravelComponent.js";
 import FillColorComponent from "../ecs/components/FillColorComponent.js";
 import RandomSoundComponent from "../ecs/components/RandomSoundComponent.js";
+import BlinksBeforeRemovalComponent from "../ecs/components/BlinksBeforeRemovalComponent.js"
 
 const componentMap = {
     PositionComponent, SpriteComponent, RenderableComponent, GridLocationComponent,
@@ -53,7 +54,8 @@ const componentMap = {
     CursorAttachmentComponent, DragonBonesComponent, ArmorComponent, FlagComponent,
     LimbLossComponent, DyingComponent, TextComponent, FadeEffectComponent,
     BounceAnimationComponent, ScaleAnimationComponent, VictoryTrophyComponent,
-    DropsTrophyOnDeathComponent, LeadLosingZombieComponent, UITravelComponent, FillColorComponent,RandomSoundComponent
+    DropsTrophyOnDeathComponent, LeadLosingZombieComponent, UITravelComponent, FillColorComponent,
+    RandomSoundComponent, BlinksBeforeRemovalComponent 
 };
 
 
