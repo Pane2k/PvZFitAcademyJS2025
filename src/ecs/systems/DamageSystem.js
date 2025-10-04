@@ -12,11 +12,8 @@ export default class DamageSystem {
     }
 
      applyDamage(targetId, damage) {
-        let remainingDamage = damage; // Урон, который "остался" для нанесения
+        let remainingDamage = damage; 
 
-        // --- НАЧАЛО НОВОЙ ЛОГИКИ ---
-
-        // 1. Сначала пытаемся нанести урон броне
         const armor = this.world.getComponent(targetId, 'ArmorComponent');
         if (armor && armor.currentHealth > 0) {
             const damageToArmor = Math.min(remainingDamage, armor.currentHealth);
@@ -24,14 +21,12 @@ export default class DamageSystem {
             remainingDamage -= damageToArmor;
         }
 
-        // Если после брони еще остался урон, наносим его здоровью
         if (remainingDamage > 0) {
             const health = this.world.getComponent(targetId, 'HealthComponent');
             if (health) {
                 const isAlreadyDead = health.currentHealth <= 0;
                 health.currentHealth -= remainingDamage;
 
-                // Если здоровье только что закончилось
                 if (health.currentHealth <= 0 && !isAlreadyDead) {
                     const isPlant = this.world.getComponent(targetId, 'PlantComponent');
 
@@ -40,17 +35,14 @@ export default class DamageSystem {
                         eventBus.publish('plant:death', { entityId: targetId });
                         this.world.addComponent(targetId, new RemovalComponent());
                     } else {
-                        // Это не растение, запускаем анимацию смерти
                         this.initiateDeath(targetId);
                     }
                 }
             }
         }
-        // --- КОНЕЦ НОВОЙ ЛОГИКИ ---
     }
 
     initiateDeath(entityId) {
-        // Этот метод теперь используется только для сущностей с анимацией смерти (зомби)
         Debug.log(`Entity ${entityId} has been defeated. Starting death sequence.`);
         
         const pos = this.world.getComponent(entityId, 'PositionComponent');

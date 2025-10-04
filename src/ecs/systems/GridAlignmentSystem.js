@@ -1,4 +1,3 @@
-// src/ecs/systems/GridAlignmentSystem.js
 import Debug from "../../core/Debug.js";
 
 export default class GridAlignmentSystem {
@@ -19,15 +18,11 @@ export default class GridAlignmentSystem {
         );
 
         for (const entityId of entities) {
-            // --- VVV КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ VVV ---
-            // Объект считается статичным, только если у него НЕТ НИ ОДНОГО
-            // компонента, отвечающего за движение.
             const isMoving = this.world.getComponent(entityId, 'VelocityComponent') ||
                              this.world.getComponent(entityId, 'ArcMovementComponent') ||
                              this.world.getComponent(entityId, 'UITravelComponent');
             
             const isStatic = !isMoving;
-            // --- ^^^ КОНЕЦ ИСПРАВЛЕНИЯ ^^^ ---
 
             if (isStatic) {
                 const gridLoc = this.world.getComponent(entityId, 'GridLocationComponent');

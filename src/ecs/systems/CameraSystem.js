@@ -1,4 +1,3 @@
-// src/ecs/systems/CameraSystem.js
 import eventBus from "../../core/EventBus.js";
 import Debug from "../../core/Debug.js";
 
@@ -9,13 +8,11 @@ export default class CameraSystem {
         this.targetOffsetX = 0;
         this.isPanning = false;
         this.isPanComplete = false;
-        this.panSpeed = 0.02; // Скорость можно будет настроить
+        this.panSpeed = 0.02;
 
-        // Подписываемся на то же событие
         eventBus.subscribe('game:start_lose_sequence', () => {
             Debug.log("CameraSystem: Lose sequence started. Panning camera to the right.");
-            // --- ИЗМЕНЕНИЕ: Двигаем камеру ВПРАВО, чтобы мир уехал влево ---
-            this.targetOffsetX = 400; // Положительное значение
+            this.targetOffsetX = 400; 
             this.isPanning = true;
         });
     }
@@ -29,7 +26,6 @@ export default class CameraSystem {
                 this.isPanComplete = true;
                 Debug.log("CameraSystem: Pan complete.");
             } else {
-                // Плавное движение
                 this.currentOffsetX += diff * this.panSpeed;
             }
         }

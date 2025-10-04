@@ -5,7 +5,7 @@ export default class DragonBonesComponent {
         this.armature = factory.buildArmature(name);
         this.scale = scale;
         this.textureName = name;
-        this.anchorOffsetY = anchorOffsetY; // <-- СОХРАНЯЕМ СМЕЩЕНИЕ
+        this.anchorOffsetY = anchorOffsetY;
 
         if (this.armature) {
             this.playAnimation(initialAnimation, true);

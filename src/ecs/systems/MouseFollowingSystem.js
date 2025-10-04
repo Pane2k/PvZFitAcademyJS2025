@@ -1,5 +1,3 @@
-// src/ecs/systems/MouseFollowingSystem.js
-
 import eventBus from "../../core/EventBus.js";
 import Debug from "../../core/Debug.js";
 import GridLocationComponent from "../components/GridLocationComponent.js";
@@ -30,13 +28,9 @@ export default class MouseFollowingSystem {
         if (gridCoords) {
             isCellAvailable = !this.grid.isCellOccupied(gridCoords.row, gridCoords.col);
 
-            // --- VVV КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ VVV ---
-            // Получаем центральные координаты ячейки
             const cellCenter = this.grid.getWorldPos(gridCoords.row, gridCoords.col);
-            // Напрямую присваиваем их центральным координатам "призрака"
             pos.x = cellCenter.x;
             pos.y = cellCenter.y;
-            // --- ^^^ КОНЕЦ ИСПРАВЛЕНИЯ ^^^ ---
         }
 
         if (isCellAvailable) {
@@ -45,7 +39,6 @@ export default class MouseFollowingSystem {
             this.world.addComponent(ghostId, new HiddenComponent());
         }
 
-        // Анимация пульсации (без изменений)
         ghost.pulseTimer += deltaTime * 5;
         const baseAlpha = 0.6;
         const pulseRange = 0.2;

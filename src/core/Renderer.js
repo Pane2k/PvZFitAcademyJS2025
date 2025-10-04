@@ -23,12 +23,10 @@ export default class Renderer{
         this.canvas.width = physicalWidth;
         this.canvas.height = physicalHeight;
 
-        // Расчет масштаба для сохранения пропорций (letterboxing)
         const scaleX = physicalWidth / this.VIRTUAL_WIDTH;
         const scaleY = physicalHeight / this.VIRTUAL_HEIGHT;
         this.scale = Math.min(scaleX, scaleY);
 
-        // Расчет отступов для центрирования
         const scaledWidth = this.VIRTUAL_WIDTH * this.scale;
         const scaledHeight = this.VIRTUAL_HEIGHT * this.scale;
         this.offsetX = (physicalWidth - scaledWidth) / 2;
@@ -80,23 +78,19 @@ export default class Renderer{
         const safeFont = font || '16px Arial';
         this.ctx.save();
 
-        // 1. Масштабируем размер шрифта
-        const parts = safeFont.split(' '); // Используем safeFont
+        const parts = safeFont.split(' '); 
         const virtualSize = parseFloat(parts[0]);
         const physicalSize = virtualSize * this.scale;
         const scaledFont = `${physicalSize}px ${parts.slice(1).join(' ')}`;
 
-        // 2. Устанавливаем свойства контекста
         this.ctx.font = scaledFont;
         this.ctx.fillStyle = color;
         this.ctx.textAlign = textAlign;
         this.ctx.textBaseline = textBaseline;
 
-        // 3. Преобразуем виртуальные координаты в физические
         const physicalX = virtualX * this.scale + this.offsetX;
         const physicalY = virtualY * this.scale + this.offsetY;
 
-        // 4. Отрисовываем текст
         this.ctx.fillText(text, physicalX, physicalY);
 
         this.ctx.restore();

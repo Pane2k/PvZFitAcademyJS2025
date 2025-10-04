@@ -1,5 +1,3 @@
-// src/ui/HUD.js
-
 import Debug from "../core/Debug.js"
 import eventBus from "../core/EventBus.js"
 import soundManager from "../core/SoundManager.js";
@@ -14,7 +12,7 @@ export default class HUD {
         this.uiPanel = { x: 0, y: 0, width: 0, height: 0, image: null };
         this.sunCounter = { x: 0, y: 0, icon: null, font: '28px Arial' };
         this.fillStyle = 'white';
-        this.introState = 'idle'; // idle -> ready -> set -> plant -> finished
+        this.introState = 'idle'; 
         this.introTimer = 0;
         this.introText = '';
 
@@ -30,12 +28,11 @@ export default class HUD {
             text: "A Huge Wave is Approaching!",
             alpha: 0,
             timer: 0,
-            state: 'idle', // 'idle', 'fading_in', 'holding', 'fading_out'
+            state: 'idle', 
             FADE_TIME: 1.0,
             HOLD_TIME: 2.0
         };
 
-        // Теперь обработчик просто сохраняет последние данные о прогрессе.
         eventBus.subscribe('wave:progress', (data) => {
             this.progress = data;
         });
@@ -117,7 +114,6 @@ export default class HUD {
         this.progressBar.x = virtualWidth - this.progressBar.width - 20;
         this.progressBar.y = virtualHeight - this.progressBar.height - 10;
 
-        // Очищаем флажки при инициализации нового уровня
         this.progressFlags = [];
     }
 
@@ -140,12 +136,10 @@ export default class HUD {
     }
 
     update(deltaTime) {
-        // Ленивая инициализация флажков. Сработает один раз за уровень.
         if (this.progress.hugeWaveIndices.length > 0 && this.progressFlags.length === 0) {
             this._initializeFlags();
         }
 
-        // Обновление интро
         if (this.introState !== 'idle' && this.introState !== 'finished') {
             this.introTimer -= deltaTime;
             if (this.introTimer <= 0) {
@@ -164,7 +158,6 @@ export default class HUD {
             }
         }
 
-        // Обновление таймеров перезарядки карточек
         for (const card of this.plantCards) {
             if (card.cooldownTimer > 0) {
                 card.cooldownTimer -= deltaTime;
@@ -174,7 +167,6 @@ export default class HUD {
             }
         }
 
-        // Плавное обновление прогресс-бара
         if (this.progress.totalWaves > 0) {
             const LERP_FACTOR = 0.05;
             const targetProgress = this.progress.currentWave / this.progress.totalWaves;
@@ -187,7 +179,6 @@ export default class HUD {
             }
         }
         
-        // Обновление анимации объявления
         const ann = this.announcement;
         if (ann.state !== 'idle') {
             ann.timer += deltaTime;
@@ -210,15 +201,13 @@ export default class HUD {
             }
         }
 
-        // Обновление анимации флажков
         for (const flag of this.progressFlags) {
-            // Условие подъема: когда началась волна, ИНДЕКС которой равен или больше triggerWaveIndex
             if (flag.state === 'resting' && (this.progress.currentWave - 1) >= flag.triggerWaveIndex) {
                 flag.state = 'raising';
             }
             if (flag.state === 'raising') {
                 const diff = flag.raisedY - flag.currentY;
-                flag.currentY += diff * 0.05; // lerp
+                flag.currentY += diff * 0.05; 
                 if (Math.abs(diff) < 1) {
                     flag.currentY = flag.raisedY;
                     flag.state = 'raised';

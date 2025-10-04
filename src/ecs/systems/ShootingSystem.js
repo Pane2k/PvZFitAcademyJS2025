@@ -26,16 +26,14 @@ export default class ShootingSystem {
             const shooterPos = this.world.getComponent(shooterId, 'PositionComponent');
             const shooterGridLoc = this.world.getComponent(shooterId, 'GridLocationComponent');
 
-            // --- VVV НАЧАЛО НОВОЙ ЛОГИКИ СТРЕЛЬБЫ ОЧЕРЕДЯМИ VVV ---
             // Если мы сейчас стреляем очередью, обновляем таймер паузы между выстрелами
             if (shooter.shotsFiredInBurst > 0) {
                 shooter.burstCooldown -= deltaTime;
                 if (shooter.burstCooldown <= 0) {
                     this.fire(shooterId, shooter); // Стреляем следующей горошиной в очереди
                 }
-                continue; // Переходим к следующему растению
+                continue;
             }
-            // --- ^^^ КОНЕЦ НОВОЙ ЛОГИКИ ^^^ ---
 
             let hasTargetOnLane = false;
             for (const zombieId of zombies) {
@@ -76,7 +74,6 @@ export default class ShootingSystem {
             }
         }
 
-        // --- VVV НАЧАЛО НОВОЙ ЛОГИКИ УПРАВЛЕНИЯ ОЧЕРЕДЬЮ VVV ---
         shooterComponent.shotsFiredInBurst++;
 
         // Если мы еще не закончили очередь
@@ -88,6 +85,5 @@ export default class ShootingSystem {
             shooterComponent.shotsFiredInBurst = 0;
             shooterComponent.fireCooldown = shooterComponent.fireRate;
         }
-        // --- ^^^ КОНЕЦ НОВОЙ ЛОГИКИ ^^^ ---
     }
 }

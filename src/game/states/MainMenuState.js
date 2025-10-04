@@ -27,9 +27,7 @@ export default class MainMenuState extends BaseState {
         this.boundHandleInputUp = (pos) => this.routeInput('input:up', pos);
         this.boundHandleInputMove = (pos) => this.routeInput('input:move', pos);
         this.boundHideSettings = () => this.settingsMenu.toggle(false);
-        // --- VVV ИЗМЕНЕНИЕ: Теперь слушаем более конкретное событие VVV ---
         this.boundHideConfirm = () => this.confirmationDialog.toggle(false);
-        // --- ^^^ КОНЕЦ ^^^ ---
         this.boundConfirmReset = () => {
             progressManager.resetProgress();
             this.setupUI();
@@ -52,7 +50,6 @@ export default class MainMenuState extends BaseState {
         eventBus.subscribe('input:move', this.boundHandleInputMove);
         eventBus.subscribe('ui:hide_settings', this.boundHideSettings);
         eventBus.subscribe('mainmenu:confirm_reset', this.boundConfirmReset);
-        // --- VVV ИЗМЕНЕНИЕ: Подписка на новое событие VVV ---
         eventBus.subscribe('mainmenu:hide_confirmation', this.boundHideConfirm);
     }
 
@@ -63,11 +60,9 @@ export default class MainMenuState extends BaseState {
         eventBus.unsubscribe('input:move', this.boundHandleInputMove);
         eventBus.unsubscribe('ui:hide_settings', this.boundHideSettings);
         eventBus.unsubscribe('mainmenu:confirm_reset', this.boundConfirmReset);
-        // --- VVV ИЗМЕНЕНИЕ: Отписка от нового события VVV ---
         eventBus.unsubscribe('mainmenu:hide_confirmation', this.boundHideConfirm);
     }
     
-    // ... (setupUI без изменений)
     setupUI() {
         this.mainMenuElements = [];
         this.levelSelectElements = [];
@@ -108,9 +103,7 @@ export default class MainMenuState extends BaseState {
             images: { idle: assetLoader.getImage('btn_reset_idle'), hover: assetLoader.getImage('btn_reset_hover'), pressed: assetLoader.getImage('btn_reset_pressed') },
             onClick: () => { 
                 soundManager.playSoundEffect('ui_click');
-                // --- VVV ИЗМЕНЕНИЕ: Передаем все 4 параметра VVV ---
                 this.confirmationDialog.toggle(true, 'сбросить прогресс', 'mainmenu:confirm_reset', 'mainmenu:hide_confirmation');
-                // --- ^^^ КОНЕЦ ИЗМЕНЕНИЯ ^^^ ---
             }
         }));
 
@@ -155,31 +148,27 @@ export default class MainMenuState extends BaseState {
     routeInput(eventName, pos) {
 
         console.log(`MainMenu received input: ${eventName}`, pos);
-    // 1. СНАЧАЛА проверяем самый верхний слой (меню настроек).
     if (this.settingsMenu.isVisible) {
         this.settingsMenu.handleInput(eventName, pos);
-        return; // <-- И немедленно выходим!
+        return; 
     }
-    // 2. Затем проверяем следующий слой (диалог подтверждения).
     if (this.confirmationDialog.isVisible) {
         this.confirmationDialog.handleInput(eventName, pos);
-        return; // <-- И немедленно выходим!
+        return; 
     }
-        // --- ^^^ КОНЕЦ КЛЮЧЕВОГО ИСПРАВЛЕНИЯ ^^^ ---
 
-        // Если ни один оверлей не активен, обрабатываем основные элементы.
         if (this.isTransitioning) return;
         
         const V_WIDTH = this.game.renderer.VIRTUAL_WIDTH;
 
-        if (this.cameraX < 0.5) { // Проверяем, на каком "экране" мы находимся
+        if (this.cameraX < 0.5) { 
             this.mainMenuElements.forEach(element => element.handleInput(eventName, pos, -this.cameraX * V_WIDTH));
         } else {
             const cameraOffset = (1 - this.cameraX) * V_WIDTH;
             this.levelSelectElements.forEach(element => {
-                if (element.handleInput) { // Для кнопок
+                if (element.handleInput) { 
                     element.handleInput(eventName, pos, cameraOffset);
-                } else { // Для карточек уровней
+                } else { 
                     const localX = pos.x - cameraOffset;
                     if (this._isInside(localX, pos.y, element.x, element.y, element.width, element.height)) {
                         if (eventName === 'input:up') element.onClick();
@@ -203,7 +192,6 @@ export default class MainMenuState extends BaseState {
         }
     }
     
-    // ... (render без изменений)
     render() {
         const renderer = this.game.renderer;
         const ctx = renderer.ctx;

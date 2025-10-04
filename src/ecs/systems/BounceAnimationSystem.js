@@ -1,7 +1,3 @@
-// src/ecs/systems/BounceAnimationSystem.js
-
-// Не нужен импорт RemovalComponent
-
 export default class BounceAnimationSystem {
     constructor() {
         this.world = null;
@@ -24,9 +20,6 @@ export default class BounceAnimationSystem {
             pos.scale = bounce.targetScale * easeOutBack;
 
             if (progress >= 1) {
-                // --- КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ ---
-                // Просто устанавливаем финальный масштаб и удаляем компонент-аниматор.
-                // Текст и его PositionComponent остаются!
                 pos.scale = bounce.targetScale; 
                 this.world.removeComponent(entityId, 'BounceAnimationComponent');
             }

@@ -18,8 +18,7 @@ class SoundManager {
             this.currentMusicVolume = 1.0;
             this.currentSfxVolume = 1.0; 
             
-            // --- НОВЫЕ СВОЙСТВА ДЛЯ ПРЕРЫВАНИЯ ---
-            this.fadeTimeoutId = null; // ID для setTimeout
+            this.fadeTimeoutId = null; 
 
             Debug.log("SoundManager initialized with Web Audio API.");
         } catch (e) {
@@ -28,7 +27,6 @@ class SoundManager {
         }
     }
 
-    // ... (unlockAudio, addSound, playSoundEffect, playRandomSound, playJingle, playMusic, stopMusic - БЕЗ ИЗМЕНЕНИЙ)
     unlockAudio() {
         if (!this.audioContext || this.isUnlocked) return;
         if (this.audioContext.state === 'suspended') {
@@ -81,24 +79,18 @@ class SoundManager {
         if (this.currentMusicSource) {
             try {
                 this.currentMusicSource.stop();
-            } catch(e) { /* Игнорируем */ }
+            } catch(e) { }
             this.currentMusicSource.disconnect();
             this.currentMusicSource = null;
         }
     }
 
-    // --- ОБНОВЛЁННЫЕ МЕТОДЫ ДЛЯ ПЛАВНОЙ ПАУЗЫ С ПРЕРЫВАНИЕМ ---
-
-    /**
-     * Прерывает любое текущее затухание.
-     */
     _cancelCurrentFade() {
         if (this.fadeTimeoutId) {
             clearTimeout(this.fadeTimeoutId);
             this.fadeTimeoutId = null;
         }
         const now = this.audioContext.currentTime;
-        // Отменяем все запланированные изменения громкости
         this.musicGain.gain.cancelScheduledValues(now);
         this.sfxGain.gain.cancelScheduledValues(now);
     }
@@ -106,7 +98,7 @@ class SoundManager {
     fadeOutAll(duration = 0.5) {
         if (!this.audioContext) return;
         
-        this._cancelCurrentFade(); // Прерываем предыдущее затухание
+        this._cancelCurrentFade(); 
 
         Debug.log(`Fading all audio out over ${duration}s.`);
         const fadeEndTime = this.audioContext.currentTime + duration;
@@ -120,7 +112,7 @@ class SoundManager {
     fadeInAll(duration = 0.5) {
         if (!this.audioContext) return;
         
-        this._cancelCurrentFade(); // Прерываем предыдущее затухание (КЛЮЧЕВОЙ МОМЕНТ)
+        this._cancelCurrentFade(); 
 
         Debug.log(`Fading all audio in over ${duration}s.`);
         const fadeEndTime = this.audioContext.currentTime + duration;
@@ -131,8 +123,6 @@ class SoundManager {
         this.fadeTimeoutId = setTimeout(() => { this.fadeTimeoutId = null; }, duration * 1000);
     }
 
-    // --- ОБНОВЛЁННЫЕ МЕТОДЫ УПРАВЛЕНИЯ ГРОМКОСТЬЮ (БЕЗ ИЗМЕНЕНИЙ) ---
-    
     setMusicVolume(level) {
         if (!this.audioContext) return;
         this.currentMusicVolume = level;

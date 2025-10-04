@@ -12,7 +12,6 @@ class EventBus {
         this.listeners[eventName].push(callback);
     }
 
-    // --- НОВЫЙ МЕТОД ---
     unsubscribe(eventName, callbackToRemove) {
         if (!this.listeners[eventName]) {
             return;
@@ -29,10 +28,9 @@ class EventBus {
         if (eventName !== 'input:move') {
             Debug.log(`Event published: '${eventName}' with data:`, data);
         }
-        this.listeners[eventName].forEach(callback => callback(data, eventName)); // Передаем и имя события
+        this.listeners[eventName].forEach(callback => callback(data, eventName));
     }
 
-    // --- НОВЫЙ МЕТОД для полной очистки ---
     clear() {
         this.listeners = {};
         Debug.log("EventBus listeners cleared.");

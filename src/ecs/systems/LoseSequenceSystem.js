@@ -55,12 +55,8 @@ export default class LoseSequenceSystem {
         if (this.sequenceState === 'fade_out') {
             this.timer -= deltaTime;
             if (this.timer <= 0) {
-                // --- VVV КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ VVV ---
-                // Публикуем событие и сразу же меняем состояние на 'done',
-                // чтобы этот блок кода не выполнился снова в следующем кадре.
                 eventBus.publish('game:lose');
                 this.sequenceState = 'done';
-                // --- ^^^ КОНЕЦ ИСПРАВЛЕНИЯ ^^^ ---
             }
         }
     }

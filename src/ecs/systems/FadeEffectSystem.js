@@ -1,4 +1,3 @@
-// src/ecs/systems/FadeEffectSystem.js
 import eventBus from "../../core/EventBus.js";
 import RemovalComponent from "../components/RemovalComponent.js";
 

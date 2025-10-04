@@ -5,10 +5,8 @@ import UITravelComponent from "../components/UITravelComponent.js";
 import PrefabComponent from "../components/PrefabComponent.js";
 import GhostPlantComponent from "../components/GhostPlantComponent.js";
 import CursorAttachmentComponent from "../components/CursorAttachmentComponent.js";
-// --- VVV НОВЫЕ ИМПОРТЫ VVV ---
 import VictoryTrophyComponent from "../components/VictoryTrophyComponent.js";
 import HitboxComponent from "../components/HitboxComponent.js";
-// --- ^^^ КОНЕЦ ИМПОРТОВ ^^^ ---
 
 export default class PlayerInputSystem {
     constructor(game, grid, hud) {
@@ -38,7 +36,6 @@ export default class PlayerInputSystem {
         if (this._handleClickOnCollectible(position)) return;
     }
 
-    // --- VVV НОВЫЙ МЕТОД ДЛЯ СБОРА ТРОФЕЯ VVV ---
     _handleClickOnTrophy(position) {
         const trophies = this.world.getEntitiesWithComponents('VictoryTrophyComponent', 'HitboxComponent');
         for (const entityID of trophies) {
@@ -58,15 +55,14 @@ export default class PlayerInputSystem {
                 // Убираем хитбокс, чтобы нельзя было кликнуть дважды
                 this.world.removeComponent(entityID, 'HitboxComponent');
                 
-                return true; // Прерываем дальнейшую обработку клика
+                return true;
             }
         }
         return false;
     }
-    // --- ^^^ КОНЕЦ НОВОГО МЕТОДА ^^^ ---
 
-    // ... (методы _handleClickOnUI, _handleClickOnCollectible, _handleClickOnGrid, _createSelectionVisuals, _destroySelectionVisuals остаются БЕЗ ИЗМЕНЕНИЙ)
-     _handleClickOnUI(position) {
+    
+    _handleClickOnUI(position) {
         const clickedCardName = this.hud.checkClick(position.x, position.y);
         if (clickedCardName) {
             const plantData = this.factory.prototypes[clickedCardName];

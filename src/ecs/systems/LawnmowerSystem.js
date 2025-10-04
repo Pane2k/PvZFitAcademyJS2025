@@ -5,18 +5,15 @@ import OutOfBoundsRemovalComponent from "../components/OutOfBoundsRemovalCompone
 import eventBus from "../../core/EventBus.js";
 import ArcMovementComponent from "../components/ArcMovementComponent.js";
 import DyingComponent from "../components/DyingComponent.js";
-// --- VVV НОВЫЙ ИМПОРТ VVV ---
 import LifetimeComponent from "../components/LifetimeComponent.js";
 
 export default class LawnmowerSystem {
-    // ... (конструктор без изменений)
     constructor(waveSystem) {
         this.world = null;
         this.waveSystem = waveSystem;
     }
 
     update() {
-        // ... (update до handleCollision без изменений)
         const zombies = this.world.getEntitiesWithComponents('ZombieComponent', 'PositionComponent', 'HitboxComponent');
         if (zombies.length === 0) return;
 
@@ -40,7 +37,6 @@ export default class LawnmowerSystem {
             this.world.removeComponent(zombieId, 'LimbLossComponent');
             this.world.removeComponent(zombieId, 'RandomSoundComponent');
 
-            // --- VVV КЛЮЧЕВЫЕ ИЗМЕНЕНИЯ ЗДЕСЬ VVV ---
             // 1. Запускаем анимацию смерти
             this.world.addComponent(zombieId, new DyingComponent(2.5));
 
@@ -52,12 +48,7 @@ export default class LawnmowerSystem {
                 zombiePos.y + 0 // targetY: Приземляемся чуть ниже исходной позиции на той же линии
             ));
 
-            // 3. Заменяем OutOfBounds на Lifetime, чтобы зомби удалился по таймеру, а не по координатам
-            
-            // --- ^^^ КОНЕЦ ИЗМЕНЕНИЙ ^^^ ---
         };
-
-        // ... (остальной код update, activateLawnmower, checkCollision без изменений)
         if (inactiveMowers.length > 0) {
             for (const mowerId of inactiveMowers) {
                 for (const zombieId of zombies) {

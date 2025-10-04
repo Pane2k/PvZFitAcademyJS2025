@@ -1,4 +1,3 @@
-// src/ecs/systems/ScaleAnimationSystem.js
 export default class ScaleAnimationSystem {
     constructor() {
         this.world = null;

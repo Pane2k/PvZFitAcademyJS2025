@@ -4,7 +4,6 @@ import RemovalComponent from "../components/RemovalComponent.js";
 import eventBus from "../../core/EventBus.js";
 
 export default class HealthMonitorSystem {
-    // ... (конструктор и начало update без изменений)
     constructor() {
         this.world = null;
     }
@@ -71,11 +70,7 @@ export default class HealthMonitorSystem {
         const dbComp = this.world.getComponent(entityId, 'DragonBonesComponent');
         const entityPos = this.world.getComponent(entityId, 'PositionComponent');
         if (!dbComp || !entityPos || !dbComp.armature) return;
-
-        // --- VVV ВОТ ИСПРАВЛЕНИЕ VVV ---
-        // Нужно обращаться к armature внутри компонента
         const bone = dbComp.armature.getBone(breakEffect.anchorBone);
-        // --- ^^^ КОНЕЦ ИСПРАВЛЕНИЯ ^^^ ---
 
         if (bone) {
             const boneTransform = bone.worldTransform;

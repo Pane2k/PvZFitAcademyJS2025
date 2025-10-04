@@ -41,7 +41,7 @@ class DragonBonesGame {
     setupControls() {
         const controlsDiv = document.getElementById('controls');
         if (!controlsDiv) return;
-        controlsDiv.innerHTML = ''; // Clear old buttons
+        controlsDiv.innerHTML = '';
 
         const animNames = Object.keys(this.armature.animations.animations);
         animNames.forEach(name => {
@@ -92,7 +92,6 @@ class DragonBonesGame {
         const sin = Math.sin(boneWt.skX);
         const displayTransform = display.transform;
 
-        // Combine bone world transform with display local transform
         const dx = boneWt.x + (displayTransform.x * boneWt.scX * cos - displayTransform.y * boneWt.scY * sin);
         const dy = boneWt.y + (displayTransform.x * boneWt.scX * sin + displayTransform.y * boneWt.scY * cos);
         const dRot = boneWt.skX + displayTransform.skX;
@@ -103,7 +102,6 @@ class DragonBonesGame {
         this.ctx.rotate(dRot);
         this.ctx.scale(dScaleX, dScaleY);
 
-        // Draw the image centered
         this.ctx.drawImage(
             this.textureImage,
             texture.x, texture.y,

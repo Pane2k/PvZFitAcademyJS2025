@@ -1,4 +1,3 @@
-// src/core/VibrationManager.js
 import Debug from "./Debug.js";
 
 class VibrationManager {
@@ -11,14 +10,8 @@ class VibrationManager {
         }
     }
 
-    /**
-     * Вызывает вибрацию.
-     * @param {number | number[]} pattern - Длительность в мс или массив [вибрация, пауза, ...].
-     */
     vibrate(pattern) {
         if (this.isSupported) {
-            // Примечание: iOS Safari не поддерживает Vibration API.
-            // На Android и других совместимых браузерах это будет работать.
             navigator.vibrate(pattern);
         }
     }
@@ -30,6 +23,5 @@ class VibrationManager {
     }
 }
 
-// Экспортируем синглтон
 const vibrationManager = new VibrationManager();
 export default vibrationManager;

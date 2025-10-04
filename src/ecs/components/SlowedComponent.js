@@ -2,6 +2,6 @@ export default class SlowedComponent {
     constructor(duration, slowFactor) {
         this.timer = duration;
         this.slowFactor = slowFactor;
-        this.originalSpeed = null; // Здесь будет сохранена исходная скорость зомби
+        this.originalSpeed = null;
     }
 }

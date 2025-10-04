@@ -1,4 +1,3 @@
-// src/ecs/systems/GameOverSystem.js
 import eventBus from "../../core/EventBus.js";
 import Debug from "../../core/Debug.js";
 import RemovalComponent from "../components/RemovalComponent.js";
@@ -31,7 +30,6 @@ export default class GameOverSystem {
                 soundManager.stopMusic();
                 soundManager.playJingle('lose_jingle');
                 vibrationManager.vibrate([200, 100, 500]);
-                // --- НОВАЯ ЛОГИКА ---
                 eventBus.publish('game:start_lose_sequence');
                 
                 // 1. Помечаем виновника

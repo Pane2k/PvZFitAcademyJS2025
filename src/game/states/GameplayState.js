@@ -108,8 +108,7 @@ export default class GameplayState extends BaseState {
             this.confirmationDialog.toggle(false);
             this.game.gameLoop.setTimeScale(1.0);
             this.isPaused = false;
-            // Было: soundManager.fadeMusicIn(0.1);
-            soundManager.fadeInAll(0.1); // <-- Стало
+            soundManager.fadeInAll(0.1); 
             this.game.stateManager.changeState(new MainMenuState(this.game));
         };
         
@@ -117,15 +116,13 @@ export default class GameplayState extends BaseState {
             this.confirmationDialog.toggle(false);
             this.game.gameLoop.setTimeScale(1.0);
             this.isPaused = false;
-            // Было: soundManager.fadeMusicIn(0.1);
-            soundManager.fadeInAll(0.1); // <-- Стало
+            soundManager.fadeInAll(0.1); 
             this.game.stateManager.changeState(new GameplayState(this.game, this.levelId));
         };
        
         this.boundShowSettings = () => this.toggleSettings(true);
         this.boundHideSettings = () => this.toggleSettings(false);
 
-        // ... (остальной код конструктора без изменений)
         this.boundOnWin = null;
         this.boundOnLose = null;
         this.boundStartLoseSeq = null;
@@ -133,7 +130,6 @@ export default class GameplayState extends BaseState {
         this.boundStartVictoryFade = null;
     }
 
-    // ... (остальной код класса остается без изменений)
     handleInput(pos, eventName) {
         if (this.confirmationDialog && this.confirmationDialog.isVisible) {
             this.confirmationDialog.handleInput(eventName, pos);
@@ -154,10 +150,9 @@ export default class GameplayState extends BaseState {
         }
     }
     handleVisibilityChange() {
-        // Если страница стала невидимой И игра не на паузе (чтобы не вызывать паузу дважды)
         if (document.hidden && !this.isPaused) {
             Debug.log("Page lost focus or was hidden. Forcing pause.");
-            this.togglePause(true); // Принудительно ставим на паузу
+            this.togglePause(true); 
         }
     }
     setupGrid() {
@@ -201,7 +196,7 @@ export default class GameplayState extends BaseState {
         this.game.world.factory = this.game.factory;
         
         
-        const availablePlants = levelData.availablePlants || ['peashooter', 'sunflower']; // Используем данные из уровня или дефолтные
+        const availablePlants = levelData.availablePlants || ['peashooter', 'sunflower']; 
         this.hud.initialize(entityPrototypes, availablePlants, this.game.assetLoader, this.game.renderer.VIRTUAL_WIDTH, this.game.renderer.VIRTUAL_HEIGHT);
         
         
@@ -261,7 +256,7 @@ export default class GameplayState extends BaseState {
         this.game.world.addSystem(new SunLandedSystem());
         this.game.world.addSystem(new BlinkingSystem());
         this.game.world.addSystem(new DamageStateSpriteSystem());
-        this.slowingSystem = new SlowingSystem(); // Сохраняем ссылку для отписки
+        this.slowingSystem = new SlowingSystem(); 
         this.game.world.addSystem(this.slowingSystem);
         this.game.world.addSystem(new SlowEffectManagementSystem());
         this.game.world.addSystem(new ArmingSystem());
@@ -301,9 +296,8 @@ export default class GameplayState extends BaseState {
             }
         };
         this.boundRestartLevel = () => {
-            this.game.gameLoop.setTimeScale(1.0); // Важно сбросить скорость времени
+            this.game.gameLoop.setTimeScale(1.0); 
             this.isPaused = false;
-            // Просто меняем текущее состояние на новое такое же
             this.game.stateManager.changeState(new GameplayState(this.game, this.levelId));
         };
         
@@ -488,7 +482,6 @@ export default class GameplayState extends BaseState {
                 this.toggleSettings(false);
             } else if (this.confirmationDialog && this.confirmationDialog.isVisible) {
                 
-                // Если открыто окно подтверждения, Escape его закрывает
                 this.boundHideConfirm();
             } else {
                 
@@ -505,11 +498,9 @@ export default class GameplayState extends BaseState {
         
         if (this.isPaused) {
             soundManager.playSoundEffect('pause');
-            // Было: soundManager.fadeMusicOut(0.5);
-            soundManager.fadeOutAll(0.407); // <-- Стало. Можно сделать чуть быстрее
+            soundManager.fadeOutAll(0.407); 
         } else {
-            // Было: soundManager.fadeMusicIn(0.5);
-            soundManager.fadeInAll(0.2); // <-- Стало
+            soundManager.fadeInAll(0.2); 
         }
         
         Debug.log(`Game paused: ${this.isPaused}`);

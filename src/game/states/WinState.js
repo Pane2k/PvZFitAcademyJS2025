@@ -1,16 +1,15 @@
 import BaseState from "./BaseState.js";
 
 export default class WinState extends BaseState {
-    constructor(game, gameplayState) { // <-- Изменено
+    constructor(game, gameplayState) { 
         super();
         this.game = game;
-        this.gameplayState = gameplayState; // <-- Добавлено
+        this.gameplayState = gameplayState; 
     }
 
     render() {
-        // Отрисовываем предыдущее состояние (геймплей) как фон
-        if (this.gameplayState) { // <-- Изменено
-            this.gameplayState.render(); // <-- Изменено
+        if (this.gameplayState) {
+            this.gameplayState.render();
         }
 
         const renderer = this.game.renderer;

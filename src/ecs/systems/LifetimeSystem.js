@@ -8,7 +8,7 @@ export default class LifetimeSystem {
 
     update(deltaTime) {
         const entities = this.world.getEntitiesWithComponents('LifetimeComponent');
-        if (!entities.length) return; // Выходим, если нет сущностей с таймером
+        if (!entities.length) return;
 
         for (const entityId of entities) {
             const lifetime = this.world.getComponent(entityId, 'LifetimeComponent');
@@ -17,8 +17,6 @@ export default class LifetimeSystem {
             if (lifetime.timer >= lifetime.duration) {
                 Debug.log(`Lifetime expired for entity ${entityId}. Marking for removal.`);
                 this.world.addComponent(entityId, new RemovalComponent());
-                
-                // Важно! Удаляем LifetimeComponent, чтобы не проверять его снова
                 this.world.removeComponent(entityId, 'LifetimeComponent');
             }
         }

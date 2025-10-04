@@ -1,4 +1,3 @@
-// src/ecs/components/FlagComponent.js
 export default class FlagComponent {
     constructor(config) {
         this.flagSlot = config.flagSlot;

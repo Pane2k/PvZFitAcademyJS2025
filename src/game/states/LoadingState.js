@@ -1,5 +1,3 @@
-// src/game/states/LoadingState.js
-
 import BaseState from "./BaseState.js";
 import Debug from "../../core/Debug.js";
 import eventBus from "../../core/EventBus.js";
@@ -7,12 +5,11 @@ import MainMenuState from "./MainMenuState.js";
 import soundManager from "../../core/SoundManager.js";
 
 export default class LoadingState extends BaseState {
-    // --- VVV ИЗМЕНЕНИЕ: Принимаем фон в конструкторе VVV ---
     constructor(game, backgroundImage) {
         super();
         this.game = game;
-        this.backgroundImage = backgroundImage; // Сразу сохраняем фон
-        this.status = 'loading'; // 'loading', 'ready', 'error'
+        this.backgroundImage = backgroundImage; 
+        this.status = 'loading'; 
         this.message = 'Загрузка...';
         
         this.boundHandleClick = this.handleClick.bind(this);
@@ -22,13 +19,10 @@ export default class LoadingState extends BaseState {
         Debug.log("Entering LoadingState...");
         eventBus.subscribe('input:down', this.boundHandleClick);
 
-        // Запускаем асинхронную загрузку ОСТАЛЬНЫХ ассетов
         this.game.loadRestAssets()
             .then(() => {
-                // Успешная загрузка
                 Debug.log("Assets loaded successfully.");
                 
-                // Передаем загруженные звуки в SoundManager
                 for (const [key, buffer] of this.game.assetLoader.audioBuffers.entries()) {
                     soundManager.addSound(key, buffer);
                 }
@@ -41,7 +35,6 @@ export default class LoadingState extends BaseState {
                 
             })
             .catch((error) => {
-                // Ошибка загрузки
                 Debug.error("Failed to load assets:", error);
                 this.status = 'error';
                 this.message = 'Ошибка загрузки ресурсов.\nПожалуйста, обновите страницу.';
@@ -61,7 +54,6 @@ export default class LoadingState extends BaseState {
     }
 
     update(deltaTime) {
-        // Логика обновления не нужна
     }
 
     render() {
@@ -71,12 +63,10 @@ export default class LoadingState extends BaseState {
         
         renderer.clear('#000');
 
-        // Отрисовываем фон, который был передан в конструктор. Он уже 100% загружен.
         if (this.backgroundImage) {
             renderer.drawImage(this.backgroundImage, 0, 0, V_WIDTH, V_HEIGHT);
         }
 
-        // ... (остальной код отрисовки текста без изменений) ...
         const fontColor = this.status === 'error' ? '#FF4D4D' : '#070d31ff';
         const fontSize = 40;
         const font = `${fontSize}px Arial`;

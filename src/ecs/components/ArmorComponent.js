@@ -6,6 +6,6 @@ export default class ArmorComponent {
         this.currentHealth = config.maxHealth;
         this.damageStates = config.damageStates || [];
         this.breakEffect = config.breakEffect;
-        this.currentStateIndex = -1; // Индекс текущего состояния повреждения
+        this.currentStateIndex = -1; 
     }
 }

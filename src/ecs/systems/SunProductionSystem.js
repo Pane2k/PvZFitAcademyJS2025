@@ -53,7 +53,6 @@ export default class SunProductionSystem {
         const pos = this.world.getComponent(producerId, 'PositionComponent');
         if (!pos) return;
 
-        // Создаем солнце рядом с растением со случайным смещением
         const offsetX = (Math.random() - 0.5) * pos.width * 0.5;
         const offsetY = (Math.random() - 0.5) * pos.height * 0.5;
         
@@ -63,13 +62,10 @@ export default class SunProductionSystem {
        
         const sunId = this.world.factory.create('sun', { x: sunX, y: sunY });
          if (sunId !== null) {
-            // Удаляем компоненты, которые не нужны солнцу от подсолнуха
+
             this.world.removeComponent(sunId, 'VelocityComponent');
             
-            // --- VVV ВОТ ИСПРАВЛЕНИЕ VVV ---
-            // Это солнце не должно привязываться к сетке, поэтому удаляем компонент.
             this.world.removeComponent(sunId, 'GridLocationComponent');
-            // --- ^^^ КОНЕЦ ИСПРАВЛЕНИЯ ^^^ ---
 
             const initialVy = -20;
             const initialVx = (Math.random() - 0.5) * 100;

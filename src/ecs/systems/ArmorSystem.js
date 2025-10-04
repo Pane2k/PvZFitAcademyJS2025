@@ -11,10 +11,6 @@ export default class ArmorSystem {
         this.world = null;
     }
 
-    /**
-     * Скрывает все спрайты во всех слотах, связанных со шлемами.
-     * @param {DragonBonesComponent} dbComp 
-     */
     _hideAllHelmets(dbComp) {
         HELMET_SLOTS.forEach(slot => dbComp.setAttachment(slot, null));
     }
@@ -51,7 +47,6 @@ export default class ArmorSystem {
             
             // Меняем спрайт, только если состояние изменилось на более поврежденное.
             if (newIndex > armor.currentStateIndex) {
-                // --- VVV КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ VVV ---
                 // 1. Прячем все возможные варианты шлемов.
                 this._hideAllHelmets(dbComp);
                 
@@ -61,7 +56,6 @@ export default class ArmorSystem {
 
                 // 3. Устанавливаем нужный спрайт в правильный слот.
                 dbComp.setAttachment(slotName, newAttachmentName);
-                // --- ^^^ КОНЕЦ ИСПРАВЛЕНИЯ ^^^ ---
                 
                 armor.currentStateIndex = newIndex;
                 Debug.log(`Armor for entity ${entityId} changed state to ${newAttachmentName}`);

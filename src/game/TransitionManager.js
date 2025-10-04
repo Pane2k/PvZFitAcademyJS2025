@@ -10,10 +10,6 @@ class TransitionManager {
         this.onComplete = null;
     }
 
-    /**
-     * Запускает полный цикл перехода: затемнение, выполнение колбэка, осветление.
-     * @param {function} onMidpointCallback - Функция, которая выполнится, когда экран станет полностью черным.
-     */
     startTransition(onMidpointCallback) {
         if (this.isActive) {
             Debug.warn("Transition already in progress.");
@@ -31,10 +27,6 @@ class TransitionManager {
         });
     }
 
-    /**
-     * Плавно затемняет экран до черного.
-     * @param {function} onComplete - Колбэк по завершении.
-     */
     fadeToBlack(onComplete = null) {
         this.alpha = 0;
         this.direction = 1;
@@ -42,10 +34,6 @@ class TransitionManager {
         this.onComplete = onComplete;
     }
 
-    /**
-     * Плавно делает экран снова прозрачным.
-     * @param {function} onComplete - Колбэк по завершении.
-     */
     fadeToTransparent(onComplete = null) {
         this.alpha = 1;
         this.direction = -1;
@@ -82,8 +70,7 @@ class TransitionManager {
         const canvas = this.renderer.canvas;
 
         ctx.save();
-        ctx.fillStyle = `rgba(255, 255, 255, ${this.alpha})`; // Белый цвет
-        // Рисуем прямоугольник в физических координатах на весь экран
+        ctx.fillStyle = `rgba(255, 255, 255, ${this.alpha})`;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.restore();
     }

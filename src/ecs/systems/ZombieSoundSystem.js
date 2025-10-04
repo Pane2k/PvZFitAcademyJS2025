@@ -1,4 +1,3 @@
-// src/ecs/systems/ZombieSoundSystem.js
 import soundManager from "../../core/SoundManager.js";
 import DyingComponent from "../components/DyingComponent.js";
 
@@ -8,7 +7,6 @@ export default class ZombieSoundSystem {
     }
 
     update(deltaTime) {
-        // Ищем только "живых" зомби
         const entities = this.world.getEntitiesWithComponents('RandomSoundComponent')
             .filter(id => !this.world.getComponent(id, 'DyingComponent'));
 
@@ -17,10 +15,8 @@ export default class ZombieSoundSystem {
             soundComp.timer -= deltaTime;
 
             if (soundComp.timer <= 0) {
-                // Воспроизводим случайный звук из группы
-                soundManager.playRandomSound(soundComp.baseKey, soundComp.count, 0.4); // Громкость пониже
+                soundManager.playRandomSound(soundComp.baseKey, soundComp.count, 0.4); 
                 
-                // Сбрасываем таймер на новое случайное значение
                 soundComp.timer = soundComp.getRandomInterval();
             }
         }

@@ -1,9 +1,6 @@
-// PvZFitAcademyJS2025/src/main.js
-
 import Game from "./game/Game.js"
 import Debug from "./core/Debug.js"
 
-// Debug.disable()
 Debug.log('PvZ Fussion: main.js Loaded successfully.')
 window.debug = Debug
 
@@ -11,34 +8,24 @@ const game = new Game()
 game.start().catch(err => Debug.error('Failed to start the game: ', err))
 window.game = game
 
-// --- VVV ДОБАВЬТЕ ВЕСЬ ЭТОТ КОД VVV ---
-
-/**
- * Обработчик для полноэкранного режима на мобильных устройствах.
- */
 function setupFullscreenHandler() {
     const promptElement = document.getElementById('fullscreen-prompt');
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
     if (isIOS) {
-        // Если это iOS, просто ничего не делаем,
-        // и приглашение никогда не появится.
         Debug.log("iOS detected. Fullscreen prompt is disabled.");
         return; 
     }
-    const targetElement = document.documentElement; // Весь документ
+    const targetElement = document.documentElement; 
 
     if (!promptElement) return;
 
-    // Функция, которая проверяет, нужно ли показывать приглашение
     const checkOrientationAndFullscreen = () => {
-        // Проверяем, что это мобильное устройство (по наличию touch событий)
         const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
         if (!isMobile) return;
 
         const isLandscape = window.screen.orientation.type.includes('landscape');
         const isFullscreen = !!document.fullscreenElement;
 
-        // Показываем приглашение, только если экран горизонтальный И мы НЕ в полноэкранном режиме
         if (isLandscape && !isFullscreen) {
             promptElement.classList.add('visible');
         } else {
@@ -46,7 +33,6 @@ function setupFullscreenHandler() {
         }
     };
 
-    // Обработчик нажатия на приглашение
     const enterFullscreen = () => {
         if (targetElement.requestFullscreen) {
             targetElement.requestFullscreen().catch(err => {
@@ -56,22 +42,16 @@ function setupFullscreenHandler() {
         promptElement.classList.remove('visible');
     };
 
-    // Назначаем события
     promptElement.addEventListener('click', enterFullscreen);
-    promptElement.addEventListener('touchstart', enterFullscreen); // Для iOS и других устройств
+    promptElement.addEventListener('touchstart', enterFullscreen); 
 
-    // Слушаем изменение ориентации экрана
     window.screen.orientation.addEventListener('change', checkOrientationAndFullscreen);
 
-    // Слушаем изменение состояния полноэкранного режима (например, если пользователь выйдет по кнопке Esc)
     document.addEventListener('fullscreenchange', checkOrientationAndFullscreen);
 
-    // Проверяем состояние при первой загрузке
     checkOrientationAndFullscreen();
 
     Debug.log("Fullscreen handler initialized.");
 }
 
-// Запускаем наш обработчик после загрузки DOM
 document.addEventListener('DOMContentLoaded', setupFullscreenHandler);
-// --- ^^^ КОНЕЦ КОДА ^^^ ---

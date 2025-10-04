@@ -15,7 +15,7 @@ export default class AnimationSystem {
             const hasFlag = this.world.getComponent(entityId, 'FlagComponent');
             
             let animationName;
-            let loop; // --- VVV ИЗМЕНЕНИЕ: Убираем значение по умолчанию VVV ---
+            let loop;
 
             const proto = this.world.factory.prototypes[prefab.name];
             const flagOverrides = proto?.components?.FlagComponent?.animationOverrides;
@@ -26,16 +26,16 @@ export default class AnimationSystem {
                 } else {
                     animationName = 'dying';
                 }
-                loop = false; // <-- Четко указываем, что смерть не зациклена
+                loop = false;
             } else if (isAttacking) {
-                loop = true; // <-- Атака всегда зациклена
+                loop = true;
                 if (hasFlag && flagOverrides?.attack) {
                     animationName = flagOverrides.attack;
                 } else {
                     animationName = 'attack';
                 }
-            } else { // Is walking or idle
-                loop = true; // <-- Ходьба всегда зациклена
+            } else {
+                loop = true;
                 if (hasFlag && flagOverrides?.walk) {
                     animationName = flagOverrides.walk;
                 } else {

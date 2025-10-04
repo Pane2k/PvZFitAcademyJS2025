@@ -15,7 +15,6 @@ update(deltaTime) {
 }
 
 findTargets() {
-    // Ищем зомби, которые сейчас движутся (т.е. не атакуют)
     const attackers = this.world.getEntitiesWithComponents('MeleeAttackComponent', 'PositionComponent', 'VelocityComponent');
     const targets = this.world.getEntitiesWithComponents('PlantComponent', 'PositionComponent', 'HealthComponent', 'HitboxComponent');
 
@@ -23,7 +22,7 @@ findTargets() {
         const attackerPos = this.world.getComponent(attackerId, 'PositionComponent');
         const attackerBox = this.world.getComponent(attackerId, 'HitboxComponent');
         
-        if (!attackerPos || !attackerBox) continue; // Защита
+        if (!attackerPos || !attackerBox) continue; 
 
         const attackRange = 10;
         const attackBox = {
@@ -37,7 +36,7 @@ findTargets() {
             const targetPos = this.world.getComponent(targetId, 'PositionComponent');
             const targetBox = this.world.getComponent(targetId, 'HitboxComponent');
             
-            if (!targetPos || !targetBox) continue; // Защита
+            if (!targetPos || !targetBox) continue;
 
             const targetRect = {
                 x: targetPos.x + targetBox.offsetX - targetBox.width / 2,
@@ -67,10 +66,7 @@ processAttacks(deltaTime) {
         const attackState = this.world.getComponent(attackerId, 'AttackingComponent');
         const attackParams = this.world.getComponent(attackerId, 'MeleeAttackComponent');
 
-        // --- VVV КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ VVV ---
-        // Проверяем, существует ли цель, ПРЕЖДЕ чем пытаться получить ее компоненты
         const targetExists = this.world.entities.has(attackState.targetId);
-        // --- ^^^ КОНЕЦ ИСПРАВЛЕНИЯ ^^^ ---
 
         if (!targetExists) {
             Debug.log(`Entity ${attackerId} target is gone, resumes walking.`);
@@ -99,7 +95,5 @@ processAttacks(deltaTime) {
         }
     }
 }
-
-  
 
 }

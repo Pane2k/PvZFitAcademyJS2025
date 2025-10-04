@@ -97,8 +97,6 @@ class DragonBonesRenderer {
 
         (this.textureData.SubTexture || []).forEach(tex => { this.textures[tex.name] = tex; });
 
-        // *** ИСПРАВЛЕНИЕ ЗДЕСЬ ***
-        // Ищем анимации сначала внутри арматуры, а если их там нет - на верхнем уровне JSON.
         const animationsSource = this.armature.animation || this.skeletonData.animation || [];
         animationsSource.forEach(animData => {
             this.animations[animData.name] = animData;

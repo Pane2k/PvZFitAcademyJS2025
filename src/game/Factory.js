@@ -1,4 +1,3 @@
-// src/game/Factory.js
 import Debug from "../core/Debug.js";
 import dragonBones from "../core/DragonBones.js";
 import PositionComponent from "../ecs/components/PositionComponent.js";
@@ -42,7 +41,6 @@ import UITravelComponent from "../ecs/components/UITravelComponent.js";
 import FillColorComponent from "../ecs/components/FillColorComponent.js";
 import RandomSoundComponent from "../ecs/components/RandomSoundComponent.js";
 import BlinksBeforeRemovalComponent from "../ecs/components/BlinksBeforeRemovalComponent.js";
-// --- VVV 1. УБЕДИТЕСЬ, ЧТО ЭТОТ ИМПОРТ ЕСТЬ VVV ---
 import DamageStateSpriteComponent from "../ecs/components/DamageStateSpriteComponent.js";
 import SlowsTargetComponent from "../ecs/components/SlowsTargetComponent.js";
 import SlowedComponent from "../ecs/components/SlowedComponent.js";
@@ -61,7 +59,6 @@ const componentMap = {
     BounceAnimationComponent, ScaleAnimationComponent, VictoryTrophyComponent,
     DropsTrophyOnDeathComponent, LeadLosingZombieComponent, UITravelComponent, FillColorComponent,
     RandomSoundComponent, BlinksBeforeRemovalComponent, 
-    // --- VVV 2. УБЕДИТЕСЬ, ЧТО КОМПОНЕНТ ДОБАВЛЕН СЮДА VVV ---
     DamageStateSpriteComponent, SlowsTargetComponent, SlowedComponent, ArmingComponent, ExplodesOnContactComponent
 };
 
@@ -200,7 +197,6 @@ export default class Factory {
         else if (compName === 'ArcMovementComponent') {
             return new ArcMovementComponent(protoData.vx, protoData.vy, protoData.gravity, protoData.targetY);
         }
-        // --- VVV 3. УБЕДИТЕСЬ, ЧТО КОМПОНЕНТ ДОБАВЛЕН В ЭТОТ СПИСОК VVV ---
         else if (['TextComponent', 'FadeEffectComponent', 'BounceAnimationComponent', 'ScaleAnimationComponent', 'ArmorComponent', 'FlagComponent', 'LimbLossComponent', 'TintEffectComponent', 'FillColorComponent', 'RandomSoundComponent', 'DamageStateSpriteComponent', 'SlowsTargetComponent', 'ArmingComponent', 'ExplodesOnContactComponent'].includes(compName)) {
             return new CompClass(protoData);
         }

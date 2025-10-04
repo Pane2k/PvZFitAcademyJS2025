@@ -23,34 +23,27 @@ export default class SunSpawningSystem {
     spawnSun() {
         if (!this.factory || !this.grid) return;
 
-        // 1. Выбираем целевую ячейку, куда солнце приземлится
         const randomCol = Math.floor(Math.random() * this.grid.cols);
         const randomRow = Math.floor(Math.random() * this.grid.rows);
         const targetPos = this.grid.getWorldPos(randomRow, randomCol);
 
-        // --- НОВАЯ, ПРАВИЛЬНАЯ ЛОГИКА РАСЧЕТА РАЗМЕРОВ ---
         const sunProto = this.factory.prototypes.sun;
         const sunImage = this.factory.assetLoader.getImage(sunProto.components.SpriteComponent.assetKey);
 
-        // Если ассет еще не загружен (маловероятно, но для безопасности)
         if (!sunImage || sunImage.height === 0) return;
 
         const sunTargetHeight = sunProto.components.PositionComponent.height;
         const aspectRatio = sunImage.width / sunImage.height;
-        // Рассчитываем АКТУАЛЬНУЮ ширину, как это делает Factory
         const actualSunWidth = sunTargetHeight * aspectRatio;
-        // --- КОНЕЦ НОВОЙ ЛОГИКИ ---
-
-        // Теперь используем правильные размеры для вычисления стартовой позиции
+        
         const startX = targetPos.x 
-        const startY = -sunTargetHeight / 2; // Используем правильную высоту
+        const startY = -sunTargetHeight / 2; 
 
         const entityID = this.factory.create('sun', { x: startX, y: startY });
         if (entityID !== null) {
-            // Добавляем GridLocationComponent, чтобы система знала, куда солнце должно приземлиться
             this.world.addComponent(entityID, new GridLocationComponent(randomRow, randomCol));
             const sunProto = this.factory.prototypes.sun;
-            const sunValue = sunProto.value || 25; // Запасной вариант
+            const sunValue = sunProto.value || 25; 
             this.world.addComponent(entityID, new CollectibleComponent(sunValue));
         }
     }
@@ -68,7 +61,6 @@ export default class SunSpawningSystem {
 
             const sunCenterY = pos.y 
 
-            // Если центр солнца достиг или пересек центр целевой ячейки
             if (sunCenterY >= targetY) {
                 this.world.removeComponent(entityID, 'VelocityComponent');
                 

@@ -1,7 +1,6 @@
 import eventBus from "../../core/EventBus.js";
 import Debug from "../../core/Debug.js";
 import UITravelComponent from "../components/UITravelComponent.js";
-// --- НОВЫЙ ИМПОРТ ---
 import soundManager from "../../core/SoundManager.js";
 
 export default class VictorySystem {
@@ -14,10 +13,8 @@ export default class VictorySystem {
     handleTrophyCollected(data) {
         if (this.sequenceState !== 'idle') return;
         
-        // --- VVV КЛЮЧЕВОЕ ИЗМЕНЕНИЕ: ЗВУК ВОСПРОИЗВОДИТСЯ ЗДЕСЬ VVV ---
         soundManager.stopMusic();
         soundManager.playJingle('win_jingle');
-        // --- ^^^ КОНЕЦ ИЗМЕНЕНИЯ ^^^ ---
 
         this.trophyId = data.entityId;
         const trophyPos = this.world.getComponent(this.trophyId, 'PositionComponent');
@@ -27,7 +24,7 @@ export default class VictorySystem {
             const targetY = 360;
             
             const distance = Math.sqrt(Math.pow(targetX - trophyPos.x, 2) + Math.pow(targetY - trophyPos.y, 2));
-            const speed = distance / 1.5; // Скорость полета трофея
+            const speed = distance / 1.5;
             
             this.world.addComponent(this.trophyId, new UITravelComponent(targetX, targetY, speed));
 

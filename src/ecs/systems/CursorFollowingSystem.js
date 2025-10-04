@@ -1,5 +1,3 @@
-// src/ecs/systems/CursorFollowingSystem.js
-
 import eventBus from "../../core/EventBus.js";
 
 export default class CursorFollowingSystem {
@@ -21,9 +19,6 @@ export default class CursorFollowingSystem {
         const entityId = attachedEntities[0];
         const pos = this.world.getComponent(entityId, 'PositionComponent');
 
-        // NOTE: КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ
-        // Так как pos.x и pos.y теперь являются ЦЕНТРОМ объекта,
-        // мы просто присваиваем им координаты курсора напрямую.
         pos.x = this.mousePosition.x;
         pos.y = this.mousePosition.y;
     }

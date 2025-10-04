@@ -1,11 +1,9 @@
 import Debug from "../../core/Debug.js";
 import eventBus from "../../core/EventBus.js";
 import soundManager from "../../core/SoundManager.js";
-// --- VVV НОВЫЙ ИМПОРТ VVV ---
 import ArcMovementComponent from "../components/ArcMovementComponent.js";
 
 export default class WaveSystem {
-    // ... (конструктор и другие методы до update без изменений)
     constructor(levelData, entityPrototypes, factory) {
         this.world = null;
         this.levelData = levelData;
@@ -19,7 +17,6 @@ export default class WaveSystem {
 
         this.isCompleted = false;
         this.totalSpawnPoints = this.levelData.waves.reduce((sum, wave) => sum + wave.spawnPoints, 0);
-        // this.spawnPointsSpent = 0;
 
         this.isWaitingForHugeWave = false;
         this.announcementTimer = 0;
@@ -36,7 +33,6 @@ export default class WaveSystem {
         this.publishProgress();
     }
 
-    // --- VVV НОВЫЙ МЕТОД ДЛЯ ПРОВЕРКИ ПОБЕДЫ И СПАВНА ТРОФЕЯ VVV ---
     checkForVictoryCondition(defeatedZombieId, position) {
         if (this.isTrophyDropped) return false;
 
@@ -51,12 +47,11 @@ export default class WaveSystem {
 
             const trophyId = this.factory.create('trophy', { x: position.x, y: position.y });
             if (trophyId !== null) {
-                // Добавляем компонент для полета по дуге НАЗАД
                 this.world.addComponent(trophyId, new ArcMovementComponent(
-                    40,       // vx: небольшая скорость вправо (покажется, что назад от зомби)
-                    -200,     // vy: начальная скорость вверх
-                    800,      // gravity: сила притяжения
-                    position.y + 0 // targetY: куда приземлиться (чуть ниже точки старта)
+                    40,       
+                    -200,     
+                    800,      
+                    position.y + 0 
                 ));
                 Debug.log(`VICTORY CONDITION MET! Last zombie (${defeatedZombieId}) defeated. Spawning trophy with arc movement.`);
             }
@@ -66,11 +61,9 @@ export default class WaveSystem {
         return false;
     }
 
-    // ... (остальные методы reset, update, setupZombiePool и т.д. без изменений)
     reset() {
         this.currentWaveIndex = -1;
         this.waveTimer = 5;
-        // this.spawnPointsSpent = 0;
         this.isWaitingForHugeWave = false;
         this.isTrophyDropped = false;
         this.isStopped = false;
@@ -108,17 +101,8 @@ export default class WaveSystem {
         this.currentWaveIndex++;
         const waveData = this.levelData.waves[this.currentWaveIndex];
         
-        // --- НАЧАЛО ИЗМЕНЕНИЙ ---
-        
-        // 1. Сначала рассчитываем, сколько очков будет потрачено в этой волне.
-        // Это нужно, чтобы обновить прогресс-бар НЕМЕДЛЕННО.
-   
-        
-        // 2. Публикуем обновленный прогресс СРАЗУ.
-        // Флажок на HUD поднимется в этот самый момент.
         this.publishProgress();
 
-        // 3. Теперь выполняем остальную логику.
         if (waveData.type === 'huge') {
             eventBus.publish('hud:show_huge_wave_announcement');
             this.isWaitingForHugeWave = true;
@@ -126,7 +110,6 @@ export default class WaveSystem {
         } else {
             this.spawnWave(waveData);
         }
-        // --- КОНЕЦ ИЗМЕНЕНИЙ ---
     }
     spawnWave(waveData) {
         this.waveTimer = waveData.delayAfter;
@@ -139,10 +122,8 @@ export default class WaveSystem {
             const chosenZombie = affordableZombies[Math.floor(Math.random() * affordableZombies.length)];
             spawnList.push(chosenZombie.name);
             budget -= chosenZombie.cost;
-            // this.spawnPointsSpent += chosenZombie.cost; // <-- УДАЛИТЕ ИЛИ ЗАКОММЕНТИРУЙТЕ ЭТУ СТРОКУ
         }
         this.spawnGroup(spawnList);
-        // this.publishProgress(); // <-- И ЭТУ ТОЖЕ, мы уже опубликовали прогресс
     }
 
     spawnHugeWave() {
@@ -155,7 +136,6 @@ export default class WaveSystem {
         if (flagZombieProto && budget >= flagZombieProto.spawnCost) {
             spawnList.push('zombie_flag');
             budget -= flagZombieProto.spawnCost;
-            // this.spawnPointsSpent += flagZombieProto.spawnCost; // <-- УДАЛИТЕ ЭТУ СТРОКУ
         }
 
         while (budget > 0) {
@@ -164,17 +144,12 @@ export default class WaveSystem {
             const chosenZombie = affordableZombies[Math.floor(Math.random() * affordableZombies.length)];
             spawnList.push(chosenZombie.name);
             budget -= chosenZombie.cost;
-            // this.spawnPointsSpent += chosenZombie.cost; // <-- И ЭТУ СТРОКУ
         }
         this.spawnGroup(spawnList);
-        // this.publishProgress(); // <-- И ЭТУ ТОЖЕ
     }
     publishProgress() {
-        // --- ИЗМЕНЕНИЕ: Передаем номер волны, а не очки
         const hugeWaveIndices = this.levelData.waves.map((wave, index) => wave.type === 'huge' ? index : -1).filter(index => index !== -1);
         eventBus.publish('wave:progress', {
-            // currentWaveIndex начинается с -1, поэтому +1. 
-            // Когда первая волна (индекс 0) начнется, мы отправим "1".
             currentWave: this.currentWaveIndex + 1,
             totalWaves: this.levelData.waves.length,
             hugeWaveIndices: hugeWaveIndices

@@ -1,10 +1,7 @@
-// src/ui/Button.js
-
 import Debug from "../core/Debug.js";
 
 export default class Button {
     constructor(config) {
-        // ... (конструктор без изменений)
         this.x = config.x;
         this.y = config.y;
         this.width = config.width;
@@ -23,7 +20,6 @@ export default class Button {
         this.isHovered = false;
     }
     
-    // ... (resetState без изменений)
     resetState() {
         this.state = 'idle';
         this.isHovered = false;
@@ -37,37 +33,26 @@ export default class Button {
     this.isHovered = this._isInside(localX, localY);
 
     if (this.isHovered && !wasHovered) {
-        // Это сообщение можно оставить для отладки
-        // console.log(`[Button Event] MOUSE ENTER -> "${this.text}"`);
     } else if (!this.isHovered && wasHovered) {
-        // И это тоже
-        // console.log(`[Button Event] MOUSE LEAVE -> "${this.text}"`);
     }
 
-    // VVV ИСПРАВЛЕНИЯ ЗДЕСЬ VVV
     if (eventName === 'input:down') {
         if (this.isHovered) {
             this.state = 'pressed';
         }
     } else if (eventName === 'input:up') {
-        // Проверяем, была ли кнопка нажата И отпущена ли она над своей областью
         if (this.state === 'pressed' && this.isHovered) {
             if (this.onClick) {
                 console.log(`[Button Event] CLICK -> "${this.text}"`);
                 this.onClick();
             }
         }
-        // После отпускания всегда сбрасываем состояние
         this.state = this.isHovered ? 'hover' : 'idle';
     } else if (eventName === 'input:move') {
-        // --- КЛЮЧЕВОЕ ИЗМЕНЕНИЕ ---
-        // Мы меняем состояние на hover/idle только если кнопка НЕ нажата.
-        // Это предотвращает сброс состояния 'pressed' из-за микродвижений.
         if (this.state !== 'pressed') {
             this.state = this.isHovered ? 'hover' : 'idle';
         }
     }
-    // ^^^ КОНЕЦ ИСПРАВЛЕНИЙ ^^^
 }
 
     _isInside(px, py) {
@@ -76,7 +61,6 @@ export default class Button {
     }
 
     draw(renderer, offsetX = 0, offsetY = 0) {
-        // ... (метод draw без изменений)
         const finalX = this.x + offsetX;
         const finalY = this.y + offsetY;
 

@@ -1,7 +1,6 @@
 import Debug from '../core/Debug.js'
 
 export default class World {
-    // ... конструктор без изменений
     constructor(){
         this.entities = new Map()
         this.systems = []
@@ -35,16 +34,13 @@ export default class World {
 
     addComponent(entityID, component){
         const entityComponents = this.entities.get(entityID)
-        // --- VVV ИСПРАВЛЕНИЕ ЗДЕСЬ VVV ---
         if (!entityComponents) {
             Debug.warn(`Attempted to add component to a non-existent entity ID: ${entityID}`);
             return;
         }
-        // --- ^^^ КОНЕЦ ИСПРАВЛЕНИЯ ^^^ ---
         entityComponents.set(component.constructor.name, component)
     }
 
-    // ... (остальной код класса без изменений)
     addSystem(system){
         this.systems.push(system)
         system.world = this

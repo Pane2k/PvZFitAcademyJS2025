@@ -128,8 +128,6 @@ class DragonBonesRenderer {
 
         (this.textureData.SubTexture || []).forEach(tex => { this.textures[tex.name] = tex; });
 
-        // *** ИСПРАВЛЕНИЕ ЗДЕСЬ ***
-        // Ищем анимации сначала внутри арматуры, а если их там нет - на верхнем уровне JSON.
         const animationsSource = this.armature.animation || this.skeletonData.animation || [];
         animationsSource.forEach(animData => {
             this.animations[animData.name] = animData;
@@ -322,18 +320,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         await renderer.load(
             'assets/animations/asa/Dragon_ske.json',
             'assets/animations/asa/Dragon_tex.json'
-        );
+        )
 
         loadingStatus.textContent = 'Ассеты дракона загружены!';
-        renderer.play('stand'); // Запускаем анимацию по умолчанию
+        renderer.play('stand')
 
-        // Назначаем события на кнопки
         document.getElementById('playStand').addEventListener('click', () => renderer.play('stand', true));
         document.getElementById('playWalk').addEventListener('click', () => renderer.play('walk', true));
         document.getElementById('playJump').addEventListener('click', () => renderer.play('jump', false));
         document.getElementById('playFall').addEventListener('click', () => renderer.play('fall', false));
 
-        // Основной цикл рендеринга
         let lastTime = 0;
         function animationLoop(timestamp) {
             const deltaTime = (timestamp - lastTime) / 1000;

@@ -5,7 +5,7 @@ export default class BoundarySystem {
     constructor(renderer) {
         this.world = null;
         this.renderer = renderer;
-        this.margin = 100; // Доп. зона за экраном, чтобы объекты исчезали плавно
+        this.margin = 100;
     }
 
     update() {

@@ -1,4 +1,3 @@
-// src/ecs/systems/DamageStateSpriteSystem.js
 import Debug from "../../core/Debug.js";
 
 export default class DamageStateSpriteSystem {

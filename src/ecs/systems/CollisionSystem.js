@@ -8,11 +8,9 @@ export default class CollisionSystem {
     }
 
     update() {
-        // Ищем только те снаряды, которые еще не были помечены на удаление
         const projectiles = this.world.getEntitiesWithComponents('ProjectileComponent', 'PositionComponent', 'HitboxComponent')
             .filter(id => !this.world.getComponent(id, 'RemovalComponent'));
             
-        // Ищем только "живых" зомби с хитбоксами
         const zombies = this.world.getEntitiesWithComponents('ZombieComponent', 'PositionComponent', 'HitboxComponent')
             .filter(id => !this.world.getComponent(id, 'DyingComponent'));
 
@@ -24,7 +22,6 @@ export default class CollisionSystem {
             const projPos = this.world.getComponent(projId, 'PositionComponent');
             const projBox = this.world.getComponent(projId, 'HitboxComponent');
 
-            // Защитная проверка на случай, если компонент удалили в том же кадре
             if (!projPos || !projBox) continue;
 
             const projRect = {
@@ -38,10 +35,7 @@ export default class CollisionSystem {
                 const zombiePos = this.world.getComponent(zombieId, 'PositionComponent');
                 const zombieBox = this.world.getComponent(zombieId, 'HitboxComponent');
 
-                // --- VVV КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ VVV ---
-                // Если у зомби в этом кадре уже удалили хитбокс, пропускаем его
                 if (!zombiePos || !zombieBox) continue;
-                // --- ^^^ КОНЕЦ ИСПРАВЛЕНИЯ ^^^ ---
                 
                 const zombieRect = {
                     x: zombiePos.x + zombieBox.offsetX - zombieBox.width / 2,
@@ -57,13 +51,9 @@ export default class CollisionSystem {
                 {
                     eventBus.publish('collision:detected', { projectileId: projId, targetId: zombieId });
                     
-                    // --- VVV КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ VVV ---
-                    // Сразу помечаем снаряд на удаление, чтобы он не мог поразить
-                    // несколько целей за один кадр.
                     this.world.addComponent(projId, new RemovalComponent());
-                    // --- ^^^ КОНЕЦ ИСПРАВЛЕНИЯ ^^^ ---
 
-                    break; // Выходим из цикла по зомби, т.к. снаряд уже "потрачен"
+                    break;
                 }
             }
         }

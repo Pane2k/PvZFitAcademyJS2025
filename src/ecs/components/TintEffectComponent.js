@@ -1,15 +1,14 @@
 export default class TintEffectComponent {
-    constructor(baseColor, maxAlpha, duration, fadeInDuration = 0, fadeOutDuration = 0, isManaged = false) { // <-- Добавляем isManaged
+    constructor(baseColor, maxAlpha, duration, fadeInDuration = 0, fadeOutDuration = 0, isManaged = false) {
         this.baseColor = baseColor;
         this.maxAlpha = maxAlpha;
         this.duration = duration;
         this.fadeInDuration = fadeInDuration;
         this.fadeOutDuration = fadeOutDuration;
         this.timer = 0;
-        this.isManaged = isManaged; // <-- Новое свойство
+        this.isManaged = isManaged; 
     }
 
-    // ... остальной код компонента без изменений ...
     getCurrentAlpha() {
         // Фаза появления (Fade In)
         if (this.timer < this.fadeInDuration) {
@@ -21,7 +20,7 @@ export default class TintEffectComponent {
         if (this.timer > this.duration - this.fadeOutDuration) {
             const timeInFadeOut = this.timer - (this.duration - this.fadeOutDuration);
             const progress = 1 - (timeInFadeOut / this.fadeOutDuration);
-            return this.maxAlpha * Math.max(0, progress); // Убедимся, что не уходит в минус
+            return this.maxAlpha * Math.max(0, progress); 
         }
 
         // Фаза удержания (Hold) - между fadeIn и fadeOut

@@ -1,8 +1,5 @@
 import eventBus from "../core/EventBus.js";
 import Debug from "../core/Debug.js";
-// --- VVV УДАЛЯЕМ НЕИСПОЛЬЗУЕМЫЕ ИМПОРТЫ VVV ---
-// import progressManager from "../game/ProgressManager.js";
-// import soundManager from "../game/SoundManager.js";
 
 export default class PauseMenu {
     constructor(assetLoader, virtualWidth, virtualHeight) {
@@ -12,13 +9,9 @@ export default class PauseMenu {
         this.isVisible = false;
         this.panelImage = assetLoader.getImage('ui_pause_panel');
         this.buttonImage = assetLoader.getImage('ui_button_default');
-        
-        // --- VVV УДАЛЯЕМ АССЕТЫ СЛАЙДЕРОВ VVV ---
-        // this.sliderBgImage = assetLoader.getImage('ui_slider_bg');
-        // this.sliderHandleImage = assetLoader.getImage('ui_slider_handle');
 
         this.width = 400;
-        this.height = 360;// Делаем меню чуть ниже
+        this.height = 360;
         this.x = (this.vWidth - this.width) / 2;
         this.y = (this.vHeight - this.height) / 2;
 
@@ -27,11 +20,10 @@ export default class PauseMenu {
         this.dragOffsetY = 0;
         this.headerHeight = 50;
 
-        // --- VVV ПОЛНОСТЬЮ ЗАМЕНЯЕМ ЭЛЕМЕНТЫ VVV ---
         const btnWidth = 250;
         const btnHeight = 55;
         const btnSpacing = 15;
-        const startY = 70; // Начинаем кнопки ниже заголовка
+        const startY = 70; 
 
         this.elements = {
             'continueBtn': { x: (this.width - btnWidth) / 2, y: startY, width: btnWidth, height: btnHeight, text: 'Продолжить' },
@@ -39,9 +31,8 @@ export default class PauseMenu {
             'settingsBtn': { x: (this.width - btnWidth) / 2, y: startY + 2 * (btnHeight + btnSpacing), width: btnWidth, height: btnHeight, text: 'Настройки' },
             'exitBtn':     { x: (this.width - btnWidth) / 2, y: startY + 3 * (btnHeight + btnSpacing), width: btnWidth, height: btnHeight, text: 'Выйти в меню' }
         };
-        // --- ^^^ КОНЕЦ ЗАМЕНЫ ^^^ ---
 
-        this.activeSlider = null; // Эта строка остается для совместимости с handleInput
+        this.activeSlider = null; 
         this._boundHandleWindowBlur = this._handleWindowBlur.bind(this);
     }
 
@@ -62,7 +53,7 @@ export default class PauseMenu {
     }
 
     handleInput(eventName, pos) {
-        if (!this.isVisible) return; // Убрали лишние проверки
+        if (!this.isVisible) return; 
 
         const worldX = pos.x;
         const worldY = pos.y;
@@ -94,19 +85,15 @@ export default class PauseMenu {
         }
     }
 
-    // --- VVV УДАЛЯЕМ НЕИСПОЛЬЗУЕМЫЙ МЕТОД _updateSliderValue VVV ---
-    // _updateSliderValue(worldX) { ... }
-
     _onButtonClick(key) {
         Debug.log(`Pause menu button clicked: ${key}`);
         if (key === 'continueBtn') {
             eventBus.publish('game:resume');
         } else if (key === 'restartBtn') {
-            // Теперь эта кнопка тоже показывает окно подтверждения
             eventBus.publish('ui:show_exit_confirmation', {
-                question: 'перезапустить уровень', // Новый вопрос
-                confirmEvent: 'game:confirm_restart', // Новое событие для подтверждения
-                cancelEvent: 'gameplay:hide_confirmation' // Событие отмены то же самое
+                question: 'перезапустить уровень', 
+                confirmEvent: 'game:confirm_restart', 
+                cancelEvent: 'gameplay:hide_confirmation' 
             });
         } else if (key === 'exitBtn') {
             eventBus.publish('ui:show_exit_confirmation', {
@@ -132,13 +119,11 @@ export default class PauseMenu {
 
         renderer.drawText("Пауза", this.x + this.width / 2, this.y + 35, '28px Arial', 'white', 'center', 'middle');
 
-        // --- VVV УПРОЩАЕМ ЛОГИКУ ОТРИСОВКИ VVV ---
         for (const key in this.elements) {
             const el = this.elements[key];
             if (this.buttonImage) renderer.drawImage(this.buttonImage, this.x + el.x, this.y + el.y, el.width, el.height);
             renderer.drawText(el.text, this.x + el.x + el.width / 2, this.y + el.y + el.height / 2, '22px Arial', 'black', 'center', 'middle');
         }
-        // --- ^^^ КОНЕЦ УПРОЩЕНИЯ ^^^ ---
         
         if (Debug.showInteractables) {
              renderer.drawRect(this.x, this.y, this.width, this.headerHeight, 'rgba(255, 0, 255, 0.5)', 2);

@@ -1,9 +1,8 @@
-// src/ecs/systems/ExplosionSystem.js
 import eventBus from "../../core/EventBus.js";
 import RemovalComponent from "../components/RemovalComponent.js";
 import soundManager from "../../core/SoundManager.js";
 import vibrationManager from "../../core/VibrationManager.js";
-import DamageSystem from "./DamageSystem.js"; // <-- Важный импорт
+import DamageSystem from "./DamageSystem.js";
 
 export default class ExplosionSystem {
     constructor() {
@@ -30,7 +29,7 @@ export default class ExplosionSystem {
 
             for (const zombieId of zombies) {
                 if (this._checkCollision(mineRect, zombieId)) {
-                    this._triggerExplosion(mineId); // Передаем ID мины
+                    this._triggerExplosion(mineId); 
                     this.world.addComponent(mineId, new RemovalComponent());
                     break;
                 }

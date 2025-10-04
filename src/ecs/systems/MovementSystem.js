@@ -1,4 +1,4 @@
-import Debug from "../../core/Debug.js"; // Убедитесь, что импорт есть
+import Debug from "../../core/Debug.js"; 
 
 export default class MovementSystem {
     constructor() {
@@ -7,13 +7,11 @@ export default class MovementSystem {
     update(deltaTime) {
         const entities = this.world.getEntitiesWithComponents('PositionComponent', 'VelocityComponent');
         
-        // Логируем только если есть движущиеся объекты
         if (entities.length > 0) {
             const firstEntityId = entities[0];
             const pos = this.world.getComponent(firstEntityId, 'PositionComponent');
             const vel = this.world.getComponent(firstEntityId, 'VelocityComponent');
 
-        
         }
 
         for (const entityId of entities) {
