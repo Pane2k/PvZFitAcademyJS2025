@@ -1,5 +1,5 @@
 import Debug from "../../core/Debug.js";
-import eventBus from "../../core/EventBus.js"
+import eventBus from "../../core/EventBus.js";
 
 export default class ShootingSystem {
     constructor(factory) {
@@ -12,32 +12,47 @@ export default class ShootingSystem {
         const zombies = this.world.getEntitiesWithComponents('ZombieComponent', 'PositionComponent');
 
         if (zombies.length === 0) {
+            // Если зомби нет, сбрасываем состояние стрельбы у всех растений
+            for (const shooterId of shooters) {
+                const shooter = this.world.getComponent(shooterId, 'ShootsProjectilesComponent');
+                shooter.shotsFiredInBurst = 0;
+                shooter.burstCooldown = 0;
+            }
             return;
         }
 
-        for (const shooterId  of shooters) {
+        for (const shooterId of shooters) {
+            const shooter = this.world.getComponent(shooterId, 'ShootsProjectilesComponent');
             const shooterPos = this.world.getComponent(shooterId, 'PositionComponent');
             const shooterGridLoc = this.world.getComponent(shooterId, 'GridLocationComponent');
-            
+
+            // --- VVV НАЧАЛО НОВОЙ ЛОГИКИ СТРЕЛЬБЫ ОЧЕРЕДЯМИ VVV ---
+            // Если мы сейчас стреляем очередью, обновляем таймер паузы между выстрелами
+            if (shooter.shotsFiredInBurst > 0) {
+                shooter.burstCooldown -= deltaTime;
+                if (shooter.burstCooldown <= 0) {
+                    this.fire(shooterId, shooter); // Стреляем следующей горошиной в очереди
+                }
+                continue; // Переходим к следующему растению
+            }
+            // --- ^^^ КОНЕЦ НОВОЙ ЛОГИКИ ^^^ ---
+
             let hasTargetOnLane = false;
             for (const zombieId of zombies) {
                 const zombiePos = this.world.getComponent(zombieId, 'PositionComponent');
-
                 if (zombiePos.x > shooterPos.x) {
                     const zombieGridCoords = this.world.grid.getCoords(zombiePos.x, zombiePos.y);
-                    
                     if (zombieGridCoords && zombieGridCoords.row === shooterGridLoc.row) {
                         hasTargetOnLane = true;
                         break;
                     }
                 }
             }
+            
             if (hasTargetOnLane) {
-                const shooter = this.world.getComponent(shooterId, 'ShootsProjectilesComponent');
                 shooter.fireCooldown -= deltaTime;
-
                 if (shooter.fireCooldown <= 0) {
-                    shooter.fireCooldown = shooter.fireRate;
+                    // Начинаем стрельбу (первый выстрел в очереди)
                     this.fire(shooterId, shooter);
                 }
             }
@@ -47,8 +62,8 @@ export default class ShootingSystem {
     fire(shooterId, shooterComponent) {
         const pos = this.world.getComponent(shooterId, 'PositionComponent');
         if (!pos) return;
+
         eventBus.publish('projectile:fired', { shooterId: shooterId });
-        // NOTE: Точка спавна снаряда относительно центра
         const spawnX = pos.x + pos.width * 0.3; 
         const spawnY = pos.y - pos.height * 0.3;
 
@@ -60,5 +75,19 @@ export default class ShootingSystem {
                 vel.vx = shooterComponent.projectileSpeed;
             }
         }
+
+        // --- VVV НАЧАЛО НОВОЙ ЛОГИКИ УПРАВЛЕНИЯ ОЧЕРЕДЬЮ VVV ---
+        shooterComponent.shotsFiredInBurst++;
+
+        // Если мы еще не закончили очередь
+        if (shooterComponent.shotsFiredInBurst < shooterComponent.burstCount) {
+            // Устанавливаем таймер для следующего выстрела в очереди
+            shooterComponent.burstCooldown = shooterComponent.burstDelay;
+        } else {
+            // Очередь закончена, сбрасываем счетчики и уходим на полную перезарядку
+            shooterComponent.shotsFiredInBurst = 0;
+            shooterComponent.fireCooldown = shooterComponent.fireRate;
+        }
+        // --- ^^^ КОНЕЦ НОВОЙ ЛОГИКИ ^^^ ---
     }
 }

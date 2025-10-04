@@ -73,7 +73,7 @@ export default class RenderSystem {
                 this.renderSprite(entityID, spriteComp, pos, drawX, drawY, finalWidth, finalHeight);
             } else if (dbComp && dbComp.armature) {
                 // Передаем общую альфу в метод
-                this.renderDragonBones(dbComp, pos, finalOffsetX, combinedAlpha);
+                this.renderDragonBones(entityID, dbComp, pos, finalOffsetX, combinedAlpha);
             } else if (textComp) {
                 // ... (без изменений)
                 const physicalX = (pos.x + finalOffsetX) * this.renderer.scale + this.renderer.offsetX;
@@ -122,10 +122,16 @@ export default class RenderSystem {
         ctx.restore();
     }
 
-    renderDragonBones(dbComp, pos, cameraOffsetX = 0, entityAlpha = 1.0) {
+    renderDragonBones(entityID, dbComp, pos, cameraOffsetX = 0, entityAlpha = 1.0) {
         const armature = dbComp.armature;
         const textureImage = this.assetLoader.getImage(dbComp.textureName.replace('_ske', '_img'));
         if (!textureImage) return;
+
+        // --- НАЧАЛО ИЗМЕНЕНИЙ ---
+        // Получаем компонент тонирования и его текущий цвет
+        const tint = this.world.getComponent(entityID, 'TintEffectComponent');
+        const tintColor = tint ? tint.getCurrentColor() : null;
+        // --- КОНЕЦ ИЗМЕНЕНИЙ ---
 
         const ctx = this.renderer.ctx;
         ctx.save();
@@ -138,15 +144,11 @@ export default class RenderSystem {
         ctx.scale(finalScale, finalScale);
         
         armature.drawOrder.forEach(slot => {
-            // --- КЛЮЧЕВОЕ ИЗМЕНЕНИЕ ---
-            // Проверяем, что слот видим по анимации (_displayAlpha > 0)
             if (slot.displayData && slot.textureData && slot.parentBone && slot._displayAlpha > 0) {
                 const boneWt = slot.parentBone.worldTransform;
                 const displayT = slot.displayData.transform;
                 ctx.save();
 
-                // Устанавливаем итоговую прозрачность для этого слота
-                // (общая прозрачность сущности * прозрачность слота из анимации)
                 ctx.globalAlpha = entityAlpha * slot._displayAlpha;
 
                 ctx.translate(boneWt.x, boneWt.y);
@@ -155,8 +157,20 @@ export default class RenderSystem {
                 ctx.translate(displayT.x, displayT.y);
                 ctx.rotate(displayT.skX);
                 ctx.scale(displayT.scX, displayT.scY);
+                
                 const tex = slot.textureData;
-                ctx.drawImage(textureImage, tex.x, tex.y, tex.width, tex.height, -tex.width / 2, -tex.height / 2, tex.width, tex.height);
+
+                // --- НАЧАЛО ИЗМЕНЕНИЙ ---
+                // Если есть цвет для тонирования - рисуем через временный холст
+                if (tintColor) {
+                    const tintedSpriteCanvas = this.drawTintedSpriteFromAtlas(textureImage, tex.x, tex.y, tex.width, tex.height, tintColor);
+                    ctx.drawImage(tintedSpriteCanvas, -tex.width / 2, -tex.height / 2, tex.width, tex.height);
+                } else {
+                    // Иначе - рисуем как обычно
+                    ctx.drawImage(textureImage, tex.x, tex.y, tex.width, tex.height, -tex.width / 2, -tex.height / 2, tex.width, tex.height);
+                }
+                // --- КОНЕЦ ИЗМЕНЕНИЙ ---
+                
                 ctx.restore();
             }
         });
@@ -164,7 +178,26 @@ export default class RenderSystem {
         if (Debug.showSkeletons) this.drawDebugBones(armature);
         ctx.restore();
     }
-    
+    drawTintedSpriteFromAtlas(atlasImage, sx, sy, sWidth, sHeight, color) {
+        // 1. Готовим временный холст размером с нужный спрайт
+        this.offscreenCanvas.width = sWidth;
+        this.offscreenCanvas.height = sHeight;
+        this.offscreenCtx.clearRect(0, 0, sWidth, sHeight);
+
+        // 2. Рисуем на него только нужную часть из атласа
+        this.offscreenCtx.drawImage(atlasImage, sx, sy, sWidth, sHeight, 0, 0, sWidth, sHeight);
+
+        // 3. Накладываем цветной фильтр
+        this.offscreenCtx.globalCompositeOperation = 'source-atop';
+        this.offscreenCtx.fillStyle = color;
+        this.offscreenCtx.fillRect(0, 0, sWidth, sHeight);
+        
+        // 4. Сбрасываем операцию для следующих вызовов
+        this.offscreenCtx.globalCompositeOperation = 'source-over';
+
+        // 5. Возвращаем готовый, покрашенный спрайт
+        return this.offscreenCanvas;
+    }
     // ... (остальные методы без изменений)
     drawDebugBones(armature) {
         const ctx = this.renderer.ctx;

@@ -34,6 +34,11 @@ import BounceAnimationSystem from "../../ecs/systems/BounceAnimationSystem.js";
 import ZombieSoundSystem from "../../ecs/systems/ZombieSoundSystem.js";
 import SunLandedSystem from "../../ecs/systems/SunLandedSystem.js";
 import BlinkingSystem from "../../ecs/systems/BlinkingSystem.js";
+import DamageStateSpriteSystem from "../../ecs/systems/DamageStateSpriteSystem.js";
+import SlowingSystem from "../../ecs/systems/SlowingSystem.js";
+import SlowEffectManagementSystem from "../../ecs/systems/SlowEffectManagementSystem.js";
+import ArmingSystem from "../../ecs/systems/ArmingSystem.js";
+import ExplosionSystem from "../../ecs/systems/ExplosionSystem.js";
 
 import Grid from "../Grid.js";
 import Factory from "../Factory.js";
@@ -68,6 +73,8 @@ export default class GameplayState extends BaseState {
         this.victorySystem = null;
         this.canPlayerInteract = false;
 
+
+        this.boundHandleVisibilityChange = this.handleVisibilityChange.bind(this)
         this.resize = this.resize.bind(this);
         window.addEventListener('resize', this.resize);
         
@@ -76,16 +83,19 @@ export default class GameplayState extends BaseState {
         
         this.boundOnResume = () => this.togglePause(false);
         
-        // --- VVV ИЗМЕНЕНИЕ ЗДЕСЬ VVV ---
         this.boundShowConfirm = (data) => {
             const safeData = data || {};
             const question = safeData.question || 'выйти в главное меню';
             const confirmEvent = safeData.confirmEvent || 'game:confirm_exit';
-            // --- VVV ИЗМЕНЕНИЕ: Теперь передаем и событие отмены VVV ---
             const cancelEvent = safeData.cancelEvent || 'gameplay:hide_confirmation';
             this.confirmationDialog.toggle(true, question, confirmEvent, cancelEvent);
-            // --- ^^^ КОНЕЦ ИЗМЕНЕНИЯ ^^^ ---
             this.pauseMenu.toggle(false);
+        };
+        this.boundHandleCancelConfirm = () => {
+            this.confirmationDialog.toggle(false);
+            if (this.isPaused) {
+                this.pauseMenu.toggle(true);
+            }
         };
         this.boundHideConfirm = () => {
             this.confirmationDialog.toggle(false);
@@ -98,9 +108,20 @@ export default class GameplayState extends BaseState {
             this.confirmationDialog.toggle(false);
             this.game.gameLoop.setTimeScale(1.0);
             this.isPaused = false;
+            // Было: soundManager.fadeMusicIn(0.1);
+            soundManager.fadeInAll(0.1); // <-- Стало
             this.game.stateManager.changeState(new MainMenuState(this.game));
         };
-
+        
+        this.boundConfirmRestart = () => {
+            this.confirmationDialog.toggle(false);
+            this.game.gameLoop.setTimeScale(1.0);
+            this.isPaused = false;
+            // Было: soundManager.fadeMusicIn(0.1);
+            soundManager.fadeInAll(0.1); // <-- Стало
+            this.game.stateManager.changeState(new GameplayState(this.game, this.levelId));
+        };
+       
         this.boundShowSettings = () => this.toggleSettings(true);
         this.boundHideSettings = () => this.toggleSettings(false);
 
@@ -132,7 +153,13 @@ export default class GameplayState extends BaseState {
             }
         }
     }
-
+    handleVisibilityChange() {
+        // Если страница стала невидимой И игра не на паузе (чтобы не вызывать паузу дважды)
+        if (document.hidden && !this.isPaused) {
+            Debug.log("Page lost focus or was hidden. Forcing pause.");
+            this.togglePause(true); // Принудительно ставим на паузу
+        }
+    }
     setupGrid() {
         const V_WIDTH = this.game.renderer.VIRTUAL_WIDTH;
         const V_HEIGHT = this.game.renderer.VIRTUAL_HEIGHT;
@@ -172,7 +199,12 @@ export default class GameplayState extends BaseState {
         const levelData = levelsData[`level_${this.levelId}`] || levelsData.level_1;
         this.game.factory = new Factory(this.game.world, this.game.assetLoader, entityPrototypes, null);
         this.game.world.factory = this.game.factory;
-        this.hud.initialize(entityPrototypes, ['peashooter', 'sunflower'], this.game.assetLoader, this.game.renderer.VIRTUAL_WIDTH, this.game.renderer.VIRTUAL_HEIGHT);
+        
+        
+        const availablePlants = levelData.availablePlants || ['peashooter', 'sunflower']; // Используем данные из уровня или дефолтные
+        this.hud.initialize(entityPrototypes, availablePlants, this.game.assetLoader, this.game.renderer.VIRTUAL_WIDTH, this.game.renderer.VIRTUAL_HEIGHT);
+        
+        
         this.renderSystem = new RenderSystem(this.game.renderer, this.game.assetLoader);
         this.pauseMenu = new PauseMenu(this.game.assetLoader, this.game.renderer.VIRTUAL_WIDTH, this.game.renderer.VIRTUAL_HEIGHT);
         this.settingsMenu = new SettingsMenu(this.game.assetLoader, this.game.renderer.VIRTUAL_WIDTH, this.game.renderer.VIRTUAL_HEIGHT);
@@ -228,6 +260,14 @@ export default class GameplayState extends BaseState {
         this.game.world.addSystem(new ZombieSoundSystem());
         this.game.world.addSystem(new SunLandedSystem());
         this.game.world.addSystem(new BlinkingSystem());
+        this.game.world.addSystem(new DamageStateSpriteSystem());
+        this.slowingSystem = new SlowingSystem(); // Сохраняем ссылку для отписки
+        this.game.world.addSystem(this.slowingSystem);
+        this.game.world.addSystem(new SlowEffectManagementSystem());
+        this.game.world.addSystem(new ArmingSystem());
+        this.game.world.addSystem(new ExplosionSystem());
+
+
         this.createLawnmowers();
         this.game.world.grid = this.grid;
 
@@ -260,14 +300,21 @@ export default class GameplayState extends BaseState {
                 }
             }
         };
+        this.boundRestartLevel = () => {
+            this.game.gameLoop.setTimeScale(1.0); // Важно сбросить скорость времени
+            this.isPaused = false;
+            // Просто меняем текущее состояние на новое такое же
+            this.game.stateManager.changeState(new GameplayState(this.game, this.levelId));
+        };
         
         eventBus.subscribe('projectile:fired', this.boundOnProjectileFired);
         eventBus.subscribe('game:win', this.boundOnWin);
         eventBus.subscribe('game:lose', this.boundOnLose);
         eventBus.subscribe('game:resume', this.boundOnResume);
         eventBus.subscribe('ui:show_exit_confirmation', this.boundShowConfirm);
-        eventBus.subscribe('ui:hide_exit_confirmation', this.boundHideConfirm);
+        eventBus.subscribe('gameplay:hide_confirmation', this.boundHandleCancelConfirm);
         eventBus.subscribe('game:confirm_exit', this.boundConfirmExit);
+        eventBus.subscribe('game:confirm_restart', this.boundConfirmRestart);
         eventBus.subscribe('ui:show_settings', this.boundShowSettings);
         eventBus.subscribe('ui:hide_settings', this.boundHideSettings);
         eventBus.subscribe('game:start_lose_sequence', this.boundStartLoseSeq);
@@ -277,7 +324,7 @@ export default class GameplayState extends BaseState {
         eventBus.subscribe('input:keydown', this.boundHandleKeyDown);
         eventBus.subscribe('trophy:collected', this.boundHandleTrophyCollected);
         eventBus.subscribe('victory:start_fade', this.boundStartVictoryFade);
-        
+        window.addEventListener('onblur', this.boundHandleVisibilityChange);
         this.canPlayerInteract = false;
         this.hud.startIntroSequence();
         
@@ -328,7 +375,9 @@ export default class GameplayState extends BaseState {
 
     exit() {
         Debug.log('Exiting GameplayState...');
-        
+        if (this.slowingSystem) {
+            this.slowingSystem.destroy();
+        }
         if (this.waveSystem) this.waveSystem.reset();
         if (this.loseSequenceSystem) this.loseSequenceSystem.reset();
         if (this.cameraSystem) this.cameraSystem.reset();
@@ -342,8 +391,9 @@ export default class GameplayState extends BaseState {
         eventBus.unsubscribe('game:lose', this.boundOnLose);
         eventBus.unsubscribe('game:resume', this.boundOnResume);
         eventBus.unsubscribe('ui:show_exit_confirmation', this.boundShowConfirm);
-        eventBus.unsubscribe('ui:hide_exit_confirmation', this.boundHideConfirm);
+        eventBus.unsubscribe('gameplay:hide_confirmation', this.boundHandleCancelConfirm);
         eventBus.unsubscribe('game:confirm_exit', this.boundConfirmExit);
+        eventBus.unsubscribe('game:confirm_restart', this.boundConfirmRestart);
         eventBus.unsubscribe('ui:show_settings', this.boundShowSettings);
         eventBus.unsubscribe('ui:hide_settings', this.boundHideSettings);
         eventBus.unsubscribe('game:start_lose_sequence', this.boundStartLoseSeq);
@@ -365,7 +415,7 @@ export default class GameplayState extends BaseState {
         eventBus.unsubscribe('plant:death', this.boundOnPlantDeath);
         eventBus.unsubscribe('card:selected', this.boundOnCardSelected);
         eventBus.unsubscribe('zombie:run_over', this.boundOnZombieRunOver);
-        
+        window.removeEventListener('onblur', this.boundHandleVisibilityChange);
         this.game.world.systems = [];
         this.game.world.entities.clear();
         this.game.world.nextEntityID = 0;
@@ -433,12 +483,15 @@ export default class GameplayState extends BaseState {
             this.debugOverlay.toggleVisibility();
         }
         if (key === 'escape' || key === ' ') {
+            
             if (this.isSettingsOpen) {
                 this.toggleSettings(false);
             } else if (this.confirmationDialog && this.confirmationDialog.isVisible) {
+                
                 // Если открыто окно подтверждения, Escape его закрывает
                 this.boundHideConfirm();
             } else {
+                
                 this.togglePause(!this.isPaused);
             }
         }
@@ -449,9 +502,16 @@ export default class GameplayState extends BaseState {
         this.isPaused = pauseState;
         this.pauseMenu.toggle(this.isPaused);
         this.game.gameLoop.setTimeScale(this.isPaused ? 0.0 : 1.0);
+        
         if (this.isPaused) {
             soundManager.playSoundEffect('pause');
+            // Было: soundManager.fadeMusicOut(0.5);
+            soundManager.fadeOutAll(0.407); // <-- Стало. Можно сделать чуть быстрее
+        } else {
+            // Было: soundManager.fadeMusicIn(0.5);
+            soundManager.fadeInAll(0.2); // <-- Стало
         }
+        
         Debug.log(`Game paused: ${this.isPaused}`);
     }
 

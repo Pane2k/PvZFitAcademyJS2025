@@ -202,6 +202,87 @@
             
         }
     },
+    "wallnut": {
+        "cost": 50,
+        "cooldown": 20,
+        "components": {
+            "PositionComponent": { "height": 65 },
+        
+            "SpriteComponent": { "assetKey": "wallnut_full" }, 
+            "RenderableComponent": { "layer": 2 },
+            "GridLocationComponent": {},
+            "HealthComponent": { "maxHealth": 1500 },
+            "PlantComponent": {},
+            "HitboxComponent": { "offsetX": 0, "offsetY": 5, "width": 50, "height": 60 },
+
+            "DamageStateSpriteComponent": {
+                "damageStates": [
+                    { "threshold": 0.66, "assetKey": "wallnut_half" },
+                    { "threshold": 0.33, "assetKey": "wallnut_low" }
+                ]
+            }
+        }
+    },
+    "repeater": {
+        "cost": 200,
+        "cooldown": 7.5,
+        "components": {
+            "PositionComponent": { "height": 70 },
+            "SpriteComponent": { "assetKey": "repeater" },
+            "RenderableComponent": { "layer": 2 },
+            "GridLocationComponent": {},
+            "HealthComponent": { "maxHealth": 200 },
+            "PlantComponent": {},
+            "HitboxComponent": { "offsetX": 19, "offsetY": 1, "width": 22, "height": 62 },
+            "ShootsProjectilesComponent": { 
+                "projectileName": "pea", 
+                "fireRate": 2, 
+                "projectileSpeed": 250,
+                "burstCount": 2,
+                "burstDelay": 0.15
+            }
+        }
+    },
+    "snow_pea": {
+        "cost": 175,
+        "cooldown": 7.5,
+        "components": {
+            "PositionComponent": { "height": 70 },
+            "SpriteComponent": { "assetKey": "snow_pea" },
+            "RenderableComponent": { "layer": 2 },
+            "GridLocationComponent": {},
+            "HealthComponent": { "maxHealth": 200 },
+            "PlantComponent": {},
+            "HitboxComponent": { "offsetX": 19, "offsetY": 1, "width": 22, "height": 62 },
+            "ShootsProjectilesComponent": { "projectileName": "snow_pea_projectile", "fireRate": 2, "projectileSpeed": 250 }
+        }
+    },
+    "snow_pea_projectile": {
+        "components": {
+            "PositionComponent": { "height": 50 },
+            "SpriteComponent": { "assetKey": "snow_pea_projectile" },
+            "RenderableComponent": { "layer": 3 },
+            "VelocityComponent": {},
+            "ProjectileComponent": { "damage": 25 },
+            "HitboxComponent": { "offsetX": 0, "offsetY": 0, "width": 25, "height": 25 },
+            "OutOfBoundsRemovalComponent": {},
+            "SlowsTargetComponent": { "slowFactor": 0.5, "duration": 3.0 }
+        }
+    },
+    "potato_mine": {
+        "cost": 25,
+        "cooldown": 20,
+        "components": {
+            "PositionComponent": { "height": 65 },
+            "SpriteComponent": { "assetKey": "potato_mine_unarmed" }, 
+            "RenderableComponent": { "layer": 2 },
+            "GridLocationComponent": {},
+            "HealthComponent": { "maxHealth": 150 },
+            "PlantComponent": {},
+            "HitboxComponent": { "offsetX": 0, "offsetY": 3, "width": 40, "height": 65 },
+            "ArmingComponent": { "armingTime": 10.0, "armedSpriteKey": "potato_mine_armed" }
+        }
+    },
     "trophy": {
         "components": {
             "PositionComponent": {  "height": 100 },

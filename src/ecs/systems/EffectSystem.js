@@ -6,10 +6,17 @@ export default class EffectSystem {
     }
 
     update(deltaTime) {
-        // Управляем Tint-эффектами
         const tintedEntities = this.world.getEntitiesWithComponents('TintEffectComponent');
         for (const entityId of tintedEntities) {
             const tint = this.world.getComponent(entityId, 'TintEffectComponent');
+
+            // --- НАЧАЛО ИЗМЕНЕНИЙ ---
+            // Если этим эффектом управляет другая система, пропускаем его
+            if (tint.isManaged) {
+                continue;
+            }
+            // --- КОНЕЦ ИЗМЕНЕНИЙ ---
+
             tint.timer += deltaTime;
 
             if (tint.timer >= tint.duration) {
@@ -17,7 +24,5 @@ export default class EffectSystem {
                 Debug.log(`Tint effect expired for entity ${entityId}.`);
             }
         }
-
-        // В будущем здесь можно будет управлять и другими эффектами (Poison, Freeze и т.д.)
     }
 }

@@ -1,76 +1,68 @@
 {
     "level_1": {
         "name": "Day - Front Yard",
+        "availablePlants": ["peashooter", "sunflower"],
         "availableZombies": ["zombie_basic"],
         "waves": [
-            {
-                "type": "mini",
-                "spawnPoints": 1,
-                "delayAfter": 15
-            },
-            {
-                "type": "mini",
-                "spawnPoints": 1,
-                "delayAfter": 25
-            },
-            {
-                "type": "mini",
-                "spawnPoints": 2,
-                "delayAfter": 25
-            },
-            {
-                "type": "mini",
-                "spawnPoints": 2,
-                "delayAfter": 25
-            },
-            {
-                "type": "mini",
-                "spawnPoints": 3,
-                "delayAfter": 25
-            },
-            {
-                "type": "huge",
-                "flagZombie": true,
-                "spawnPoints": 5,
-                "delayAfter": 0
-            }
+            { "type": "mini", "spawnPoints": 1, "delayAfter": 15 },
+            { "type": "mini", "spawnPoints": 1, "delayAfter": 15 },
+            { "type": "mini", "spawnPoints": 2, "delayAfter": 25 },
+            { "type": "mini", "spawnPoints": 2, "delayAfter": 25 },
+            { "type": "mini", "spawnPoints": 3, "delayAfter": 25 },
+            { "type": "huge", "spawnPoints": 5, "delayAfter": 0 }
         ]
     },
     "level_2": {
-        "name": "Day - Front Yard",
+        "name": "Day - More Zombies",
+        "availablePlants": ["peashooter", "sunflower", "potato_mine"],
         "availableZombies": ["zombie_basic", "zombie_cone"],
         "waves": [
-            {
-                "type": "mini",
-                "spawnPoints": 1,
-                "delayAfter": 15
-            },
-            {
-                "type": "mini",
-                "spawnPoints": 2,
-                "delayAfter": 25
-            },
-            {
-                "type": "mini",
-                "spawnPoints": 3,
-                "delayAfter": 25
-            },
-            {
-                "type": "mini",
-                "spawnPoints": 4,
-                "delayAfter": 25
-            },
-            {
-                "type": "mini",
-                "spawnPoints": 5,
-                "delayAfter": 25
-            },
-            {
-                "type": "huge",
-                "flagZombie": true,
-                "spawnPoints": 8,
-                "delayAfter": 0
-            }
+            { "type": "mini", "spawnPoints": 1, "delayAfter": 15 },
+            { "type": "mini", "spawnPoints": 2, "delayAfter": 25 },
+            { "type": "mini", "spawnPoints": 4, "delayAfter": 25 },
+            { "type": "mini", "spawnPoints": 5, "delayAfter": 25 },
+            { "type": "huge", "spawnPoints": 8, "delayAfter": 0 }
+        ]
+    },
+    "level_3": {
+        "name": "Day - Wall-nuts!",
+        "availablePlants": ["peashooter", "sunflower", "potato_mine", "wallnut"],
+        "availableZombies": ["zombie_basic", "zombie_cone", "zombie_bucket"],
+        "waves": [
+            { "type": "mini", "spawnPoints": 1, "delayAfter": 15 },
+            { "type": "mini", "spawnPoints": 2, "delayAfter": 25 },
+            { "type": "mini", "spawnPoints": 3, "delayAfter": 25 },
+            { "type": "mini", "spawnPoints": 4, "delayAfter": 25 },
+            { "type": "huge", "spawnPoints": 6, "delayAfter": 25 },
+            { "type": "mini", "spawnPoints": 5, "delayAfter": 25 },
+            { "type": "mini", "spawnPoints": 7, "delayAfter": 25 },
+            { "type": "mini", "spawnPoints": 8, "delayAfter": 25 },
+            { "type": "mini", "spawnPoints": 9, "delayAfter": 25 },
+            { "type": "huge", "spawnPoints": 10, "delayAfter": 0 }
+        ]
+    },
+    "level_4": {
+        "name": "Day - Chill Out",
+        "availablePlants": ["peashooter", "sunflower", "potato_mine", "wallnut", "snow_pea"],
+        "availableZombies": ["zombie_basic", "zombie_cone", "zombie_bucket"],
+        "waves": [
+            { "type": "mini", "spawnPoints": 4, "delayAfter": 15 },
+            { "type": "huge", "spawnPoints": 7, "delayAfter": 25 },
+            { "type": "mini", "spawnPoints": 6, "delayAfter": 25 },
+            { "type": "mini", "spawnPoints": 6, "delayAfter": 25 },
+            { "type": "huge", "spawnPoints": 12, "delayAfter": 0 }
+        ]
+    },
+    "level_5": {
+        "name": "Day - Double Trouble",
+        "availablePlants": ["peashooter", "sunflower", "potato_mine", "wallnut", "snow_pea", "repeater"],
+        "availableZombies": ["zombie_basic", "zombie_cone", "zombie_bucket", "zombie_flag"],
+        "waves": [
+            { "type": "mini", "spawnPoints": 5, "delayAfter": 15 },
+            { "type": "mini", "spawnPoints": 6, "delayAfter": 20 },
+            { "type": "huge", "spawnPoints": 8, "delayAfter": 25 },
+            { "type": "mini", "spawnPoints": 7, "delayAfter": 20 },
+            { "type": "huge", "spawnPoints": 15, "delayAfter": 0 }
         ]
     }
 }

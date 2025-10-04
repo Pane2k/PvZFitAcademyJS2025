@@ -1,13 +1,15 @@
 export default class TintEffectComponent {
-    constructor(baseColor, maxAlpha, duration, fadeInDuration = 0, fadeOutDuration = 0) {
-        this.baseColor = baseColor; // e.g., '255, 255, 0'
-        this.maxAlpha = maxAlpha;     // e.g., 0.4
+    constructor(baseColor, maxAlpha, duration, fadeInDuration = 0, fadeOutDuration = 0, isManaged = false) { // <-- Добавляем isManaged
+        this.baseColor = baseColor;
+        this.maxAlpha = maxAlpha;
         this.duration = duration;
         this.fadeInDuration = fadeInDuration;
         this.fadeOutDuration = fadeOutDuration;
         this.timer = 0;
+        this.isManaged = isManaged; // <-- Новое свойство
     }
 
+    // ... остальной код компонента без изменений ...
     getCurrentAlpha() {
         // Фаза появления (Fade In)
         if (this.timer < this.fadeInDuration) {

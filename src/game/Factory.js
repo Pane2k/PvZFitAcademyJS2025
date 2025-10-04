@@ -4,7 +4,6 @@ import dragonBones from "../core/DragonBones.js";
 import PositionComponent from "../ecs/components/PositionComponent.js";
 import SpriteComponent from "../ecs/components/SpriteComponent.js";
 import RenderableComponent from "../ecs/components/RenderableComponent.js";
-// ... (все остальные импорты)
 import GridLocationComponent from '../ecs/components/GridLocationComponent.js';
 import VelocityComponent from "../ecs/components/VelocityComponent.js";
 import CollectibleComponent from "../ecs/components/CollectibleComponent.js";
@@ -42,7 +41,13 @@ import LeadLosingZombieComponent from "../ecs/components/LeadLosingZombieCompone
 import UITravelComponent from "../ecs/components/UITravelComponent.js";
 import FillColorComponent from "../ecs/components/FillColorComponent.js";
 import RandomSoundComponent from "../ecs/components/RandomSoundComponent.js";
-import BlinksBeforeRemovalComponent from "../ecs/components/BlinksBeforeRemovalComponent.js"
+import BlinksBeforeRemovalComponent from "../ecs/components/BlinksBeforeRemovalComponent.js";
+// --- VVV 1. УБЕДИТЕСЬ, ЧТО ЭТОТ ИМПОРТ ЕСТЬ VVV ---
+import DamageStateSpriteComponent from "../ecs/components/DamageStateSpriteComponent.js";
+import SlowsTargetComponent from "../ecs/components/SlowsTargetComponent.js";
+import SlowedComponent from "../ecs/components/SlowedComponent.js";
+import ArmingComponent from "../ecs/components/ArmingComponent.js";
+import ExplodesOnContactComponent from "../ecs/components/ExplodesOnContactComponent.js";
 
 const componentMap = {
     PositionComponent, SpriteComponent, RenderableComponent, GridLocationComponent,
@@ -55,12 +60,12 @@ const componentMap = {
     LimbLossComponent, DyingComponent, TextComponent, FadeEffectComponent,
     BounceAnimationComponent, ScaleAnimationComponent, VictoryTrophyComponent,
     DropsTrophyOnDeathComponent, LeadLosingZombieComponent, UITravelComponent, FillColorComponent,
-    RandomSoundComponent, BlinksBeforeRemovalComponent 
+    RandomSoundComponent, BlinksBeforeRemovalComponent, 
+    // --- VVV 2. УБЕДИТЕСЬ, ЧТО КОМПОНЕНТ ДОБАВЛЕН СЮДА VVV ---
+    DamageStateSpriteComponent, SlowsTargetComponent, SlowedComponent, ArmingComponent, ExplodesOnContactComponent
 };
 
-
 export default class Factory {
-    // constructor и _parseAllDragonBones без изменений
     constructor(world, assetLoader, entityPrototypes, grid) {
         this.world = world;
         this.assetLoader = assetLoader;
@@ -172,7 +177,7 @@ export default class Factory {
             return new HitboxComponent(protoData.offsetX, protoData.offsetY, protoData.width, protoData.height);
         }
         else if (compName === 'ShootsProjectilesComponent') {
-            return new ShootsProjectilesComponent(protoData.projectileName, protoData.fireRate, protoData.projectileSpeed);
+            return new ShootsProjectilesComponent(protoData.projectileName, protoData.fireRate, protoData.projectileSpeed, protoData.burstCount, protoData.burstDelay);
         }
         else if (compName === 'ProjectileComponent') {
             return new ProjectileComponent(protoData.damage);
@@ -186,20 +191,17 @@ export default class Factory {
         else if (compName === 'CollectibleComponent') {
             return new CollectibleComponent(this.prototypes[name].value || 0);
         }
-        
-        // --- VVV ВОТ ОНО, ИСПРАВЛЕНИЕ!!! VVV ---
         else if (compName === 'RenderableComponent') {
             return new RenderableComponent(protoData.layer || 0);
         }
-        // --- ^^^ КОНЕЦ ИСПРАВЛЕНИЯ ^^^ ---
-        
         else if (compName === 'LifetimeComponent') {
             return new LifetimeComponent(protoData.duration);
         }
         else if (compName === 'ArcMovementComponent') {
             return new ArcMovementComponent(protoData.vx, protoData.vy, protoData.gravity, protoData.targetY);
         }
-        else if (['TextComponent', 'FadeEffectComponent', 'BounceAnimationComponent', 'ScaleAnimationComponent', 'ArmorComponent', 'FlagComponent', 'LimbLossComponent', 'TintEffectComponent', 'FillColorComponent', 'RandomSoundComponent'].includes(compName)) {
+        // --- VVV 3. УБЕДИТЕСЬ, ЧТО КОМПОНЕНТ ДОБАВЛЕН В ЭТОТ СПИСОК VVV ---
+        else if (['TextComponent', 'FadeEffectComponent', 'BounceAnimationComponent', 'ScaleAnimationComponent', 'ArmorComponent', 'FlagComponent', 'LimbLossComponent', 'TintEffectComponent', 'FillColorComponent', 'RandomSoundComponent', 'DamageStateSpriteComponent', 'SlowsTargetComponent', 'ArmingComponent', 'ExplodesOnContactComponent'].includes(compName)) {
             return new CompClass(protoData);
         }
         else {

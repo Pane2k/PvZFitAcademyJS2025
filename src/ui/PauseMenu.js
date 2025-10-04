@@ -1,7 +1,8 @@
 import eventBus from "../core/EventBus.js";
 import Debug from "../core/Debug.js";
-import progressManager from "../game/ProgressManager.js";
-import soundManager from "../core/SoundManager.js";
+// --- VVV УДАЛЯЕМ НЕИСПОЛЬЗУЕМЫЕ ИМПОРТЫ VVV ---
+// import progressManager from "../game/ProgressManager.js";
+// import soundManager from "../game/SoundManager.js";
 
 export default class PauseMenu {
     constructor(assetLoader, virtualWidth, virtualHeight) {
@@ -11,11 +12,13 @@ export default class PauseMenu {
         this.isVisible = false;
         this.panelImage = assetLoader.getImage('ui_pause_panel');
         this.buttonImage = assetLoader.getImage('ui_button_default');
-        this.sliderBgImage = assetLoader.getImage('ui_slider_bg');
-        this.sliderHandleImage = assetLoader.getImage('ui_slider_handle');
+        
+        // --- VVV УДАЛЯЕМ АССЕТЫ СЛАЙДЕРОВ VVV ---
+        // this.sliderBgImage = assetLoader.getImage('ui_slider_bg');
+        // this.sliderHandleImage = assetLoader.getImage('ui_slider_handle');
 
         this.width = 400;
-        this.height = 350;
+        this.height = 360;// Делаем меню чуть ниже
         this.x = (this.vWidth - this.width) / 2;
         this.y = (this.vHeight - this.height) / 2;
 
@@ -24,15 +27,21 @@ export default class PauseMenu {
         this.dragOffsetY = 0;
         this.headerHeight = 50;
 
-        this.elements = {
-            'continueBtn': { x: 50, y: 280, width: 140, height: 50, text: 'Продолжить' },
-            'exitBtn': { x: 210, y: 280, width: 140, height: 50, text: 'Выйти' },
-            'settingsBtn': { x: (this.width - 180) / 2, y: 210, width: 180, height: 50, text: 'Настройки' },
-            'musicSlider': { x: 50, y: 80, width: 300, height: 30, text: 'Музыка', value: progressManager.getSetting('musicVolume') },
-            'sfxSlider': { x: 50, y: 150, width: 300, height: 30, text: 'Эффекты', value: progressManager.getSetting('sfxVolume') }
-        };
+        // --- VVV ПОЛНОСТЬЮ ЗАМЕНЯЕМ ЭЛЕМЕНТЫ VVV ---
+        const btnWidth = 250;
+        const btnHeight = 55;
+        const btnSpacing = 15;
+        const startY = 70; // Начинаем кнопки ниже заголовка
 
-        this.activeSlider = null;
+        this.elements = {
+            'continueBtn': { x: (this.width - btnWidth) / 2, y: startY, width: btnWidth, height: btnHeight, text: 'Продолжить' },
+            'restartBtn':  { x: (this.width - btnWidth) / 2, y: startY + btnHeight + btnSpacing, width: btnWidth, height: btnHeight, text: 'Рестарт' },
+            'settingsBtn': { x: (this.width - btnWidth) / 2, y: startY + 2 * (btnHeight + btnSpacing), width: btnWidth, height: btnHeight, text: 'Настройки' },
+            'exitBtn':     { x: (this.width - btnWidth) / 2, y: startY + 3 * (btnHeight + btnSpacing), width: btnWidth, height: btnHeight, text: 'Выйти в меню' }
+        };
+        // --- ^^^ КОНЕЦ ЗАМЕНЫ ^^^ ---
+
+        this.activeSlider = null; // Эта строка остается для совместимости с handleInput
         this._boundHandleWindowBlur = this._handleWindowBlur.bind(this);
     }
 
@@ -53,7 +62,7 @@ export default class PauseMenu {
     }
 
     handleInput(eventName, pos) {
-        if (!this.isVisible && !this.isDragging && !this.activeSlider) return;
+        if (!this.isVisible) return; // Убрали лишние проверки
 
         const worldX = pos.x;
         const worldY = pos.y;
@@ -69,54 +78,42 @@ export default class PauseMenu {
             
             for (const key in this.elements) {
                 const el = this.elements[key];
-                if (el.text && this._isInside(worldX, worldY, this.x + el.x, this.y + el.y, el.width, el.height)) {
+                if (this._isInside(worldX, worldY, this.x + el.x, this.y + el.y, el.width, el.height)) {
                     this._onButtonClick(key);
                     return;
                 }
             }
-
-            ['musicSlider', 'sfxSlider'].forEach(key => {
-                 const el = this.elements[key];
-                 if (this._isInside(worldX, worldY, this.x + el.x, this.y + el.y, el.width, el.height)) {
-                    this.activeSlider = el;
-                    this._updateSliderValue(worldX);
-                 }
-            });
-
         } else if (eventName === 'input:move') {
             if (this.isDragging) {
                 this.x = worldX - this.dragOffsetX;
                 this.y = worldY - this.dragOffsetY;
             }
-            if (this.activeSlider) {
-                this._updateSliderValue(worldX);
-            }
-
         } else if (eventName === 'input:up') {
             this.isDragging = false;
             this.activeSlider = null;
         }
     }
 
-    _updateSliderValue(worldX) {
-        const slider = this.activeSlider;
-        if (!slider) return;
-        const relativeX = worldX - (this.x + slider.x);
-        slider.value = Math.max(0, Math.min(1, relativeX / slider.width));
-    }
+    // --- VVV УДАЛЯЕМ НЕИСПОЛЬЗУЕМЫЙ МЕТОД _updateSliderValue VVV ---
+    // _updateSliderValue(worldX) { ... }
 
     _onButtonClick(key) {
         Debug.log(`Pause menu button clicked: ${key}`);
         if (key === 'continueBtn') {
             eventBus.publish('game:resume');
+        } else if (key === 'restartBtn') {
+            // Теперь эта кнопка тоже показывает окно подтверждения
+            eventBus.publish('ui:show_exit_confirmation', {
+                question: 'перезапустить уровень', // Новый вопрос
+                confirmEvent: 'game:confirm_restart', // Новое событие для подтверждения
+                cancelEvent: 'gameplay:hide_confirmation' // Событие отмены то же самое
+            });
         } else if (key === 'exitBtn') {
-            // --- VVV ИЗМЕНЕНИЕ: Передаем все данные, включая событие отмены VVV ---
             eventBus.publish('ui:show_exit_confirmation', {
                 question: 'выйти в главное меню',
                 confirmEvent: 'game:confirm_exit',
-                cancelEvent: 'gameplay:hide_confirmation' // Указываем, какое событие для отмены
+                cancelEvent: 'gameplay:hide_confirmation'
             });
-            // --- ^^^ КОНЕЦ ИЗМЕНЕНИЯ ^^^ ---
         } else if (key === 'settingsBtn') {
             eventBus.publish('ui:show_settings');
         }
@@ -133,23 +130,15 @@ export default class PauseMenu {
             renderer.drawImage(this.panelImage, this.x, this.y, this.width, this.height);
         }
 
-        renderer.drawText("Пауза", this.x + this.width / 2, this.y + 30, '28px Arial', 'white', 'center', 'middle');
+        renderer.drawText("Пауза", this.x + this.width / 2, this.y + 35, '28px Arial', 'white', 'center', 'middle');
 
+        // --- VVV УПРОЩАЕМ ЛОГИКУ ОТРИСОВКИ VVV ---
         for (const key in this.elements) {
             const el = this.elements[key];
-            if (el.text && el.width && el.height) { // Это кнопка
-                if (this.buttonImage) renderer.drawImage(this.buttonImage, this.x + el.x, this.y + el.y, el.width, el.height);
-                renderer.drawText(el.text, this.x + el.x + el.width / 2, this.y + el.y + el.height / 2, '20px Arial', 'black', 'center', 'middle');
-            } else { // Это слайдер
-                renderer.drawText(el.text, this.x + el.x, this.y + el.y - 15, '18px Arial', 'white', 'left');
-                if (this.sliderBgImage) renderer.drawImage(this.sliderBgImage, this.x + el.x, this.y + el.y, el.width, el.height);
-                if (this.sliderHandleImage) {
-                    const handleWidth = 20;
-                    const handleX = this.x + el.x + (el.width - handleWidth) * el.value;
-                    renderer.drawImage(this.sliderHandleImage, handleX, this.y + el.y, handleWidth, el.height);
-                }
-            }
+            if (this.buttonImage) renderer.drawImage(this.buttonImage, this.x + el.x, this.y + el.y, el.width, el.height);
+            renderer.drawText(el.text, this.x + el.x + el.width / 2, this.y + el.y + el.height / 2, '22px Arial', 'black', 'center', 'middle');
         }
+        // --- ^^^ КОНЕЦ УПРОЩЕНИЯ ^^^ ---
         
         if (Debug.showInteractables) {
              renderer.drawRect(this.x, this.y, this.width, this.headerHeight, 'rgba(255, 0, 255, 0.5)', 2);

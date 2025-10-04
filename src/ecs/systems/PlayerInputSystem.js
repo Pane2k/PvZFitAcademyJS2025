@@ -26,10 +26,16 @@ export default class PlayerInputSystem {
     handleGameClick(position) {
         if (!this.factory || !this.grid || !this.hud) return;
 
+        // 1. Проверка UI остается на первом месте. Если клик был по карточке, выходим.
         if (this._handleClickOnUI(position)) return;
-        if (this._handleClickOnCollectible(position)) return;
-        if (this._handleClickOnTrophy(position)) return; // <--- НОВАЯ ПРОВЕРКА
+
+        // 2. Сначала пытаемся посадить растение на сетку.
+        // Если растение было выбрано и клик пришелся на сетку, метод вернет true, и мы выйдем.
         if (this._handleClickOnGrid(position)) return;
+        
+        // 3. Если посадка не произошла, проверяем клик по собираемым предметам (солнце, трофей).
+        if (this._handleClickOnTrophy(position)) return;
+        if (this._handleClickOnCollectible(position)) return;
     }
 
     // --- VVV НОВЫЙ МЕТОД ДЛЯ СБОРА ТРОФЕЯ VVV ---
@@ -83,6 +89,9 @@ export default class PlayerInputSystem {
         return false;
     }
     _handleClickOnCollectible(position) {
+        if (this.selectedPlant) {
+            return false;
+        }
         const collectibles = this.world.getEntitiesWithComponents('CollectibleComponent', 'PositionComponent');
         for (const entityID of collectibles) {
             const pos = this.world.getComponent(entityID, 'PositionComponent');

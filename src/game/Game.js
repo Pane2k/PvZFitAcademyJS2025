@@ -100,6 +100,15 @@ export default class Game{
             this.assetLoader.loadImage('sun', 'assets/images/sun.png'),
             this.assetLoader.loadImage('pea', 'assets/images/pea.png'),
             this.assetLoader.loadImage('sunflower', 'assets/images/sunflower.png'),
+            this.assetLoader.loadImage('wallnut_full', 'assets/images/wallnut_full.png'),
+            this.assetLoader.loadImage('wallnut_half', 'assets/images/wallnut_half.png'),
+            this.assetLoader.loadImage('wallnut_low', 'assets/images/wallnut_low.png'),
+            this.assetLoader.loadImage('repeater', 'assets/images/repeater.png'),
+            this.assetLoader.loadImage('snow_pea', 'assets/images/snow_pea.png'),
+            this.assetLoader.loadImage('snow_pea_projectile', 'assets/images/snow_pea_projectile.png'),
+            this.assetLoader.loadImage('potato_mine_unarmed', 'assets/images/potato_mine_unarmed.png'),
+            this.assetLoader.loadImage('potato_mine_armed', 'assets/images/potato_mine_armed.png'),
+            
             this.assetLoader.loadImage('lawnmower', 'assets/images/lawnmower.png'),
             this.assetLoader.loadImage('trophy', 'assets/images/trophy.png'),
             
@@ -145,7 +154,7 @@ export default class Game{
             // Звуки UI
             this.assetLoader.loadAudio('ui_click', 'assets/sounds/ui_click.wav', soundManager.audioContext),
             this.assetLoader.loadAudio('button_click', 'assets/sounds/button_click.wav', soundManager.audioContext),
-            this.assetLoader.loadAudio('pause', 'assets/sounds/pause.wav', soundManager.audioContext),
+            this.assetLoader.loadAudio('pause', 'assets/sounds/pause.ogg', soundManager.audioContext),
             this.assetLoader.loadAudio('seedlift', 'assets/sounds/seedlift.wav', soundManager.audioContext),
 
             // Звуки Игрового процесса
