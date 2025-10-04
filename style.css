@@ -1,3 +1,5 @@
+/* PvZFitAcademyJS2025/style.css */
+
 * {
     margin: 0;
     padding: 0;
@@ -16,3 +18,33 @@ html, body {
     width: 100%;
     height: 100%;
 }
+
+/* VVV ДОБАВЬТЕ ЭТИ СТИЛИ VVV */
+#fullscreen-prompt {
+    display: none; /* Скрыт по умолчанию */
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    color: white;
+    font-family: Arial, sans-serif;
+    z-index: 1000;
+    cursor: pointer;
+}
+
+#fullscreen-prompt.visible {
+    display: flex; /* Показываем, когда нужно */
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+
+.prompt-content {
+    font-size: 24px;
+    padding: 20px;
+    border: 2px solid white;
+    border-radius: 10px;
+}
+/* ^^^ КОНЕЦ СТИЛЕЙ ^^^ */
